@@ -1,0 +1,5 @@
+#!/bin/bash
+cd public/scripts
+coffee -c *.coffee
+cd ../..
+coffee server

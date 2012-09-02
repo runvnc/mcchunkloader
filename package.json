@@ -1,0 +1,9 @@
+{
+  "name": "mcchunk",
+  "description": "MC Chunk loader 2.0",
+  "version": "2.0.0alpha",
+  "author": "Jason Livesay <ithkuil@gmail.com>",
+  "dependencies": {
+    "express": ""
+  }
+}

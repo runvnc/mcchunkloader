@@ -16,9 +16,10 @@ tags =
   '_8' : 'TAG_String'
   '_9' : 'TAG_List'
   '_10' : 'TAG_Compound'   
+  '_11' : 'TAG_Int_Array'
 
 class TAG
-  constructor: (@reader) =>
+  constructor: (@reader) ->
   readName: =>
     tagName = new TAG_String(@reader)
     @name = tagName.read()
@@ -26,7 +27,7 @@ class TAG
 
 class TAG_End extends TAG
   readName: => 'END'
-  read: => 1 
+  read: => '=END='
 
 class TAG_Unknown extends TAG
   read: => 'unknown tag type'
@@ -59,7 +60,7 @@ class TAG_List extends TAG
   read: =>
     type = @reader.getInt8()
     length = @reader.getInt32()
-    var arr = []
+    arr = []
     for i in [0..length-1]
       tag = @reader.read type, '_'+i.toString()
       arr.push tag    
@@ -69,161 +70,65 @@ class TAG_Byte_Array extends TAG
   read: =>
     type = 1
     length = @reader.getInt32()
-    @reader.getUint8 length
+    @reader.getInt8 length
+
+class TAG_Int_Array extends TAG
+  read: =>    
+    length = @reader.getInt32()
+    @reader.getInt32 length
+
+
 
 class TAG_Compound extends TAG
   read: =>
     obj ={}     
-    do 
+    i = 0
+    tag = 'dummy'
+    while tag? and tag isnt '=END=' and i < 16
       tag = @reader.read()
-      if ((tag !== null) && (typeof(tag) !== 'undefined') && !tag['END']) {
-        for (var k in tag) {
-          obj[k] = tag[k];
-        }
-      }
-      i++;
-    } while ((tag !== null) && (typeof(tag) !== 'undefined') && !tag['END'] && i<16);
-    return obj;    
-  };
-
-  this.decode = function() {
-    
-  };
-}
-
-TAG_String.prototype.readName = readName;
-TAG_Byte.prototype.readName = readName;
-TAG_Short.prototype.readName = readName;
-TAG_Int.prototype.readName = readName;
-TAG_Long.prototype.readName = readName;
-TAG_Compound.prototype.readName = readName;
-TAG_List.prototype.readName = readName;
-TAG_Float.prototype.readName = readName;
-TAG_Double.prototype.readName = readName;
-TAG_Byte_Array.prototype.readName = readName;
-
-function NBTReader(data) {
-  this.position = 0;
-  this.data = data;
-  
-  this.read = function(typespec) {
-    var type = null;
-    if (!typespec) {
-      type = this.readBytes(1);
-      if (type.length === 0) return null;
-    } else {
-      type = typespec;
-    }
-  
-    var typeStr = '_'+type.toString();
-    var name = tags[typeStr];
-
-    var tag = null;
-  
-    switch(name) {
-      case 'TAG_End':
-        tag = new TAG_End(this);        
-        break;  
-      case 'TAG_Byte':
-        tag = new TAG_Byte(this);
-        break;
-      case 'TAG_Short':
-        tag = new TAG_Short(this);
-        break;
-      case 'TAG_Int':
-        tag = new TAG_Int(this);
-        break;
-      case 'TAG_Long':
-        tag = new TAG_Long(this);
-        break;
-      case 'TAG_Float':
-        tag = new TAG_Float(this);
-        break;
-      case 'TAG_Double':
-        tag = new TAG_Double(this);
-        break;
-      case 'TAG_Byte_Array':
-        tag = new TAG_Byte_Array(this);
-        break;
-      case 'TAG_String':
-        tag = new TAG_String(this);
-        break;
-      case 'TAG_List':
-        tag = new TAG_List(this);
-        break;
-      case 'TAG_Compound':
-        tag = new TAG_Compound(this);
-        break;
-      default:  
-        tag = new TAG_Unknown(this);
-        break;
-    }
-    var ret = new Object();
-    var name2 = '';
-    if (!typespec) {
-      name2 = tag.readName();
-      if (name==='TAG_Compound' && name2==='')
-        name2 = 'root';
-      ret[name2] = tag.read();
-    } else {
-      ret = tag.read();
-    }
-    return ret;
-  };
-
-/*
-  var cnt1 = 0;
-  this.readBytes = function(count) {
-    try {
-      if (!this.data) {
-        console.log('thisdata empty');
-        return [];
-      }
-      if (this.data.length == 0) {
-        console.log('thisdata empty');
-        return [];
-      }
-      var ar;
-      var start = this.position;
-      if (start+count>this.data.length) {
-        ar = this.data.slice(start);
-      } else {
-        ar = this.data.slice(start,start+count-1);
-      }
-      this.position = start + count;
-      if (this.position>this.data.length) {
-        this.position = this.data.length;
-      }
-      return ar;
-    } catch (e) {
-      alert(e);
-      return [];
-    }
-  };
- what the fuck is the problem with using data.slice??
-  */
-
-  this.readBytes = function(count) {
-    if (count>100) {
-      var r = this.data.slice(this.position, this.position+count-1);
-      this.position += count;
-      return r;
-    }
-
-    var ret = new Array();
-    var start = this.position;
-    for (var i=start; i<this.data.length &
-         i<start+count; i++) {
-          ret.push(this.data[i]);
-          this.i++;
-          this.position++;
-    }      
-    return ret;  
-  };
-  
-
-}
+      if tag? and tag isnt '=END='
+        for key, val of tag
+          obj[key] = val
+      i++
+    obj    
 
 
+class NBTReader extends dataview.jDataView
+  read: (typespec) =>
+    type = null
+    if not typespec?
+      type = @getUint8()
+      if not type? then return null
+    else
+      type = typespec    
 
+    typeStr = '_'+type.toString()
+    name = tags[typeStr];
 
+    switch name
+      when 'TAG_End'        then tag = new TAG_End(this)
+      when 'TAG_Byte'       then tag = new TAG_Byte(this)
+      when 'TAG_Short'      then tag = new TAG_Short(this)
+      when 'TAG_Int'        then tag = new TAG_Int(this)
+      when 'TAG_Long'       then tag = new TAG_Long(this)
+      when 'TAG_Float'      then tag = new TAG_Float(this)
+      when 'TAG_Double'     then tag = new TAG_Double(this)
+      when 'TAG_Byte_Array' then tag = new TAG_Byte_Array(this)
+      when 'TAG_Int_Array'  then tag = new TAG_Int_Array(this)
+      when 'TAG_String'     then tag = new TAG_String(this)
+      when 'TAG_List'       then tag = new TAG_List(this)
+      when 'TAG_Compound'   then tag = new TAG_Compound(this)
+      else                       tag = new TAG_Unknown(this)
+        
+    ret = {}
+    name2 = ''
+    if not typespec?
+      name2 = tag.readName()
+      if name is 'TAG_Compound' and name2 is ''
+        name2 = 'root'
+      ret[name2] = tag.read()
+    else
+      ret = tag.read()
+    ret
+
+exports.NBTReader = NBTReader

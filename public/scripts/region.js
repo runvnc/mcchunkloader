@@ -86,6 +86,9 @@
       data = new Uint8Array(this.buffer, this.dataView.tell(), length);
       console.log("got byte array length " + data.length);
       retval = new Zlib.Inflate(data).decompress();
+      console.log('retval is ');
+      console.log(retval);
+      console.log('after retval');
       return retval;
     };
 

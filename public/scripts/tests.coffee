@@ -6,6 +6,7 @@ data = undefined
 
 binaryhttp = require 'binaryhttp'
 region = require 'region'
+nbt = require 'nbt'
 
 
 whichChunks = (region) ->
@@ -14,7 +15,13 @@ whichChunks = (region) ->
   for x in [0..31]
     for z in [0..31]
       if region.hasChunk x,z
-        chunks[x+','+z] = region.getChunk x,z
+        nbtbytes = region.getChunk x,z
+        nbtBuffer = new ArrayBuffer(nbtbytes.length)
+        byteView = new Uint8Array(nbtBuffer)
+        for i in [0..nbtbytes.length-1]
+          byteView[i] = nbtbytes[i]
+        nbtReader = new nbt.NBTReader(nbtBuffer)
+        chunk = nbtReader.read()
         count++
   console.log "#{count} of max 1024 chunks"
   console.log chunks

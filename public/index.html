@@ -2,8 +2,49 @@
 <html>
     <head>
         <title>MC Chunk Loader 2.0</title>
+        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        <style>
+         body {
+           background-color: #000000;
+           margin: 0px;
+           overflow: hidden;
+           font-family:Monospace;
+           font-size:13px;
+           text-align:center;
+           font-weight: bold;
+           text-align:center;
+         }
+
+        a {
+          color:#0078ff;
+        }
+
+        #info {
+          color: #fff;
+          position: absolute;
+          top: 0px; width: 100%;
+          padding: 5px;
+          z-index: 100;
+        }
+        #proginner {
+          position: absolute;
+          left: 40%;
+          width: 0px;
+          height: 25px;
+          background-color: #fff;
+        }
+        #progouter {
+          position: absolute;
+          left: 40%;
+          height:25px;
+          width: 300px;
+          border: 1px solid #fff;
+        }
+    </style>
+
     </head>
     <body>
+      <div id="progouter"></div><div id="proginner"></div>
 
       <script src="scripts/jquery.min.js"></script>
       <script src="scripts/modules.js"></script>
@@ -11,8 +52,12 @@
       <script src="scripts/jdataview.js"></script>
       <script src="scripts/inflate.min.js"></script>
       <script src="scripts/nbt.js"></script>
+      <script src="scripts/chunk.js"></script>
       <script src="scripts/region.js"></script>
+      <script src="scripts/three.min.js"></script>
+      <script src="scripts/Stats.js"></script>
+      <script src="scripts/renderer.js"></script>
       <script src="scripts/tests.js"></script>
-      <script src="scripts/main.js"></script>
+     <script src="scripts/main.js"></script>
     </body>
 </html>

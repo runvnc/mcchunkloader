@@ -42,16 +42,19 @@ class TAG_Double extends TAG
   read: => @reader.getFloat64()
 
 class TAG_Byte extends TAG
-  read: @reader.getInt8()
+  read: => @reader.getInt8()
 
 class TAG_Short extends TAG
-  read: @reader.getInt16()
+  read: => @reader.getInt16()
 
 class TAG_String extends TAG
   read: =>
     if not @reader? then return 0
     length = @reader.getInt16()
-    @reader.getString length
+    if length is 0
+      return ''
+    else
+      return @reader.getString length
 
 class TAG_Long extends TAG
   read: => @reader.getFloat64()
@@ -61,6 +64,7 @@ class TAG_List extends TAG
     type = @reader.getInt8()
     length = @reader.getInt32()
     arr = []
+    if length is 0 then return arr
     for i in [0..length-1]
       tag = @reader.read type, '_'+i.toString()
       arr.push tag    
@@ -70,14 +74,23 @@ class TAG_Byte_Array extends TAG
   read: =>
     type = 1
     length = @reader.getInt32()
-    @reader.getInt8 length
+    #arr = []
+    arr = new Uint8Array(@reader.dataview.buffer, @reader.dataview.tell(), length)
+    @reader.dataview.seek @reader.dataview.tell() + length
+    arr
+    #@reader.dataview.buffer
+    #for i in [0..length-1]
+    #  arr.push @reader.getInt8()
+    #arr
 
 class TAG_Int_Array extends TAG
-  read: =>    
+  read: =>
+    type = 3   
     length = @reader.getInt32()
-    @reader.getInt32 length
-
-
+    arr = []
+    for i in [0..length-1]
+      arr.push @reader.getInt32()
+    arr
 
 class TAG_Compound extends TAG
   read: =>
@@ -92,9 +105,25 @@ class TAG_Compound extends TAG
       i++
     obj    
 
+class NBTReader
+  constructor: (@nbtbytes) ->
+    @nbtBuffer = new ArrayBuffer(nbtbytes.length)
+    @byteView = new Uint8Array(@nbtBuffer)
+    for i in [0..nbtbytes.length-1]
+      @byteView[i] = nbtbytes[i]
+    @dataview = new dataview.jDataView(@nbtBuffer)
+    @dataview.seek.call @dataview, 0
+ 
+  getUint8: => @dataview.getUint8.call @dataview
+  getInt8: => @dataview.getInt8.call @dataview
+  getFloat32: => @dataview.getFloat32.call @dataview
+  getFloat64: => @dataview.getFloat64.call @dataview
+  getInt16: => @dataview.getInt16.call @dataview
+  getInt32: => @dataview.getInt32.call @dataview
+  getString: (length) => @dataview.getString.call @dataview, length
 
-class NBTReader extends dataview.jDataView
-  read: (typespec) =>
+  read: (typespec) ->
+    if @dataview.tell() is @nbtbytes.length then return
     type = null
     if not typespec?
       type = @getUint8()
@@ -123,7 +152,7 @@ class NBTReader extends dataview.jDataView
     ret = {}
     name2 = ''
     if not typespec?
-      name2 = tag.readName()
+      name2 = tag.readName()      
       if name is 'TAG_Compound' and name2 is ''
         name2 = 'root'
       ret[name2] = tag.read()

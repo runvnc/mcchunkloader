@@ -1,5 +1,5 @@
 (function() {
-  var CHUNK_HEADER_SIZE, Region, SECTOR_BYTES, SECTOR_INTS, dataview, emptySector, emptySectorBuffer, exports, require, sizeDelta,
+  var CHUNK_HEADER_SIZE, Region, SECTOR_BYTES, SECTOR_INTS, chunk, dataview, emptySector, emptySectorBuffer, exports, nbt, require, sizeDelta,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   if (typeof window !== "undefined" && window !== null) {
@@ -8,6 +8,10 @@
   }
 
   dataview = require('dataview');
+
+  nbt = require('nbt');
+
+  chunk = require('chunk');
 
   SECTOR_BYTES = 4096;
 
@@ -35,7 +39,6 @@
       this.dataView = new dataview.jDataView(this.buffer);
       sizeDelta = 0;
       nSectors = this.buffer.byteLength / SECTOR_BYTES;
-      console.log('nSectors is ' + nSectors);
       this.sectorFree = [];
       for (i = 0, _ref = nSectors - 1; 0 <= _ref ? i <= _ref : i >= _ref; 0 <= _ref ? i++ : i--) {
         this.sectorFree.push(true);
@@ -44,8 +47,6 @@
       this.sectorFree[1] = false;
       this.dataView.seek(0);
       this.offsets = new Int32Array(this.buffer, 0, SECTOR_INTS);
-      console.log('@offsets follows');
-      console.log(this.offsets);
       for (i = 0; 0 <= SECTOR_INTS ? i <= SECTOR_INTS : i >= SECTOR_INTS; 0 <= SECTOR_INTS ? i++ : i--) {
         offset = this.dataView.getInt32();
         if (offset !== 0 && (offset >> 16) + ((offset >> 8) & 0xFF) <= this.sectorFree.length) {
@@ -57,39 +58,31 @@
     }
 
     Region.prototype.getChunk = function(x, z) {
-      var data, length, numSectors, offset, retval, sectorNumber, version;
-      if (this.outOfBounds(x, z)) {
-        console.log("READ " + x + z(" out of bounds"));
-        return null;
+      var data, length, nbtReader, numSectors, offset, retval, retvalbytes, sectorNumber, version;
+      try {
+        if (this.outOfBounds(x, z)) return null;
+        offset = this.getOffset(x, z);
+        if (offset === 0) return null;
+        sectorNumber = new Int32Array(1);
+        numSectors = new Uint8Array(1);
+        offset = this.getOffset(x, z);
+        sectorNumber = offset >> 16;
+        numSectors = (offset >> 8) & 0xFF;
+        if (numSectors === 0) return null;
+        if (sectorNumber + numSectors > this.sectorFree.length) return null;
+        this.dataView.seek(sectorNumber * SECTOR_BYTES);
+        length = this.dataView.getInt32();
+        if (length > SECTOR_BYTES * numSectors) return null;
+        version = this.dataView.getUint8();
+        data = new Uint8Array(this.buffer, this.dataView.tell(), length);
+        retvalbytes = new Zlib.Inflate(data).decompress();
+        nbtReader = new nbt.NBTReader(retvalbytes);
+        retval = new chunk.Chunk(nbtReader.read());
+        return retval;
+      } catch (e) {
+
       }
-      offset = this.getOffset(x, z);
-      if (offset === 0) return null;
-      sectorNumber = new Int32Array(1);
-      numSectors = new Uint8Array(1);
-      offset = this.getOffset(x, z);
-      sectorNumber = offset >> 16;
-      numSectors = (offset >> 8) & 0xFF;
-      if (sectorNumber + numSectors > this.sectorFree.length) {
-        console.log("READ " + x + z + " invalid sector");
-        console.log('length of sectorFree is ' + this.sectorFree.length + ' sectorNumber is ' + sectorNumber + ' numSectors is ' + numSectors);
-        return null;
-      }
-      this.dataView.seek(sectorNumber * SECTOR_BYTES);
-      length = this.dataView.getInt32();
-      console.log('LENGTH IS ' + length);
-      if (length > SECTOR_BYTES * numSectors) {
-        console.log("READ" + x + z + " invalid length: " + length + " > 4096 * " + numSectors);
-        return null;
-      }
-      version = this.dataView.getUint8();
-      console.log('COMPRESSION VERSION IS ' + version);
-      data = new Uint8Array(this.buffer, this.dataView.tell(), length);
-      console.log("got byte array length " + data.length);
-      retval = new Zlib.Inflate(data).decompress();
-      console.log('retval is ');
-      console.log(retval);
-      console.log('after retval');
-      return retval;
+      return null;
     };
 
     Region.prototype.outOfBounds = function(x, z) {
@@ -103,7 +96,6 @@
     Region.prototype.hasChunk = function(x, z) {
       var offset;
       offset = this.getOffset(x, z);
-      console.log('haschunk ' + x + ', ' + z + ' offset is ' + offset + ' returning ' + (offset !== 0));
       return offset !== 0;
     };
 

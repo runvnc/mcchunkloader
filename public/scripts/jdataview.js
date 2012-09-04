@@ -122,7 +122,6 @@ var jDataView = function (buffer, byteOffset, byteLength, littleEndian) {
 
 					// Move the internal offset forward
 					view._offset = byteOffset + size;
-
 					return view._view['get' + type](byteOffset, littleEndian);
 				}
 			})(type, this);
@@ -252,8 +251,8 @@ jDataView.prototype = {
 			value = this.buffer.toString('ascii', this._start + byteOffset, this._start + byteOffset + length);
 		}
 		else {
-			value = '';
-			for (var i = 0; i < length; ++i) {
+			value = ''; 
+			for (var i = 0; i < length; ++i) {        
 				var char = this.getUint8(byteOffset + i);
 				value += String.fromCharCode(char > 127 ? 65533 : char);
 			}

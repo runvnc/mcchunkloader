@@ -139,10 +139,13 @@
     __extends(TAG_Byte, _super);
 
     function TAG_Byte() {
+      this.read = __bind(this.read, this);
       TAG_Byte.__super__.constructor.apply(this, arguments);
     }
 
-    TAG_Byte.prototype.read = TAG_Byte.reader.getInt8();
+    TAG_Byte.prototype.read = function() {
+      return this.reader.getInt8();
+    };
 
     return TAG_Byte;
 
@@ -153,10 +156,13 @@
     __extends(TAG_Short, _super);
 
     function TAG_Short() {
+      this.read = __bind(this.read, this);
       TAG_Short.__super__.constructor.apply(this, arguments);
     }
 
-    TAG_Short.prototype.read = TAG_Short.reader.getInt16();
+    TAG_Short.prototype.read = function() {
+      return this.reader.getInt16();
+    };
 
     return TAG_Short;
 
@@ -175,7 +181,11 @@
       var length;
       if (!(this.reader != null)) return 0;
       length = this.reader.getInt16();
-      return this.reader.getString(length);
+      if (length === 0) {
+        return '';
+      } else {
+        return this.reader.getString(length);
+      }
     };
 
     return TAG_String;
@@ -213,6 +223,7 @@
       type = this.reader.getInt8();
       length = this.reader.getInt32();
       arr = [];
+      if (length === 0) return arr;
       for (i = 0, _ref = length - 1; 0 <= _ref ? i <= _ref : i >= _ref; 0 <= _ref ? i++ : i--) {
         tag = this.reader.read(type, '_' + i.toString());
         arr.push(tag);
@@ -234,10 +245,12 @@
     }
 
     TAG_Byte_Array.prototype.read = function() {
-      var length, type;
+      var arr, length, type;
       type = 1;
       length = this.reader.getInt32();
-      return this.reader.getInt8(length);
+      arr = new Uint8Array(this.reader.dataview.buffer, this.reader.dataview.tell(), length);
+      this.reader.dataview.seek(this.reader.dataview.tell() + length);
+      return arr;
     };
 
     return TAG_Byte_Array;
@@ -254,9 +267,14 @@
     }
 
     TAG_Int_Array.prototype.read = function() {
-      var length;
+      var arr, i, length, type, _ref;
+      type = 3;
       length = this.reader.getInt32();
-      return this.reader.getInt32(length);
+      arr = [];
+      for (i = 0, _ref = length - 1; 0 <= _ref ? i <= _ref : i >= _ref; 0 <= _ref ? i++ : i--) {
+        arr.push(this.reader.getInt32());
+      }
+      return arr;
     };
 
     return TAG_Int_Array;
@@ -294,17 +312,58 @@
 
   })(TAG);
 
-  NBTReader = (function(_super) {
+  NBTReader = (function() {
 
-    __extends(NBTReader, _super);
-
-    function NBTReader() {
-      this.read = __bind(this.read, this);
-      NBTReader.__super__.constructor.apply(this, arguments);
+    function NBTReader(nbtbytes) {
+      var i, _ref;
+      this.nbtbytes = nbtbytes;
+      this.getString = __bind(this.getString, this);
+      this.getInt32 = __bind(this.getInt32, this);
+      this.getInt16 = __bind(this.getInt16, this);
+      this.getFloat64 = __bind(this.getFloat64, this);
+      this.getFloat32 = __bind(this.getFloat32, this);
+      this.getInt8 = __bind(this.getInt8, this);
+      this.getUint8 = __bind(this.getUint8, this);
+      this.nbtBuffer = new ArrayBuffer(nbtbytes.length);
+      this.byteView = new Uint8Array(this.nbtBuffer);
+      for (i = 0, _ref = nbtbytes.length - 1; 0 <= _ref ? i <= _ref : i >= _ref; 0 <= _ref ? i++ : i--) {
+        this.byteView[i] = nbtbytes[i];
+      }
+      this.dataview = new dataview.jDataView(this.nbtBuffer);
+      this.dataview.seek.call(this.dataview, 0);
     }
+
+    NBTReader.prototype.getUint8 = function() {
+      return this.dataview.getUint8.call(this.dataview);
+    };
+
+    NBTReader.prototype.getInt8 = function() {
+      return this.dataview.getInt8.call(this.dataview);
+    };
+
+    NBTReader.prototype.getFloat32 = function() {
+      return this.dataview.getFloat32.call(this.dataview);
+    };
+
+    NBTReader.prototype.getFloat64 = function() {
+      return this.dataview.getFloat64.call(this.dataview);
+    };
+
+    NBTReader.prototype.getInt16 = function() {
+      return this.dataview.getInt16.call(this.dataview);
+    };
+
+    NBTReader.prototype.getInt32 = function() {
+      return this.dataview.getInt32.call(this.dataview);
+    };
+
+    NBTReader.prototype.getString = function(length) {
+      return this.dataview.getString.call(this.dataview, length);
+    };
 
     NBTReader.prototype.read = function(typespec) {
       var name, name2, ret, tag, type, typeStr;
+      if (this.dataview.tell() === this.nbtbytes.length) return;
       type = null;
       if (!(typespec != null)) {
         type = this.getUint8();
@@ -368,7 +427,7 @@
 
     return NBTReader;
 
-  })(dataview.jDataView);
+  })();
 
   exports.NBTReader = NBTReader;
 

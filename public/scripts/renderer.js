@@ -1,5 +1,5 @@
 (function() {
-  var RegionRenderer, SCALE, delay, exports, require,
+  var RegionRenderer, SCALE, chunks, delay, exports, require,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   if (typeof window !== "undefined" && window !== null) {
@@ -8,6 +8,8 @@
   }
 
   SCALE = 5;
+
+  chunks = require('chunk');
 
   delay = function(ms, func) {
     return setTimeout(func, ms);
@@ -27,6 +29,7 @@
       this.showProgress = __bind(this.showProgress, this);
       this.load = __bind(this.load, this);
       this.loadChunk = __bind(this.loadChunk, this);
+      this.getBlockAt = __bind(this.getBlockAt, this);
       this.mouseX = 0;
       this.mouseY = 0;
       this.windowHalfX = window.innerWidth / 2;
@@ -36,14 +39,28 @@
       this.load();
     }
 
+    RegionRenderer.prototype.getBlockAt = function(chunk, x, y, z) {
+      var blockpos, section, sectionnum;
+      if (!(chunk.root.Level.Sections != null)) return;
+      sectionnum = Math.floor(y / 16);
+      blockpos = y * 16 * 16 + z * 16 + x;
+      section = chunk.root.Level.Sections[sectionnum];
+      if (!(section != null) || (!((section != null ? section.Blocks : void 0) != null))) {
+        return -1;
+      } else {
+        return section.Blocks[blockpos];
+      }
+      return null;
+    };
+
     RegionRenderer.prototype.loadChunk = function(chunk, chunkX, chunkZ) {
-      var id, vertex, x, y, z;
-      this.showProgress((x * z) / (32 * 32));
+      var id, m, vertex, x, y, z;
       for (x = 0; x <= 15; x++) {
         for (y = 0; y <= 255; y++) {
           for (z = 0; z <= 15; z++) {
-            id = chunk.getBlockAt(x, y, z);
-            if ((id != null) && id === 3) {
+            m = x + y + z;
+            id = this.getBlockAt(chunk, x, y, z);
+            if ((id != null) && id > 0) {
               vertex = new THREE.Vector3();
               vertex.x = (chunkX * 16 + x) * SCALE;
               vertex.y = y * SCALE;
@@ -57,7 +74,7 @@
     };
 
     RegionRenderer.prototype.load = function() {
-      var chunk, particles, region, x, z;
+      var chunk, particles, region, seconds, start, total, x, z;
       this.material = new THREE.ParticleBasicMaterial({
         size: 5
       });
@@ -67,18 +84,19 @@
       particles.rotation.y = Math.random() * 6;
       particles.rotation.z = 0;
       this.scene.add(particles);
+      start = new Date().getTime();
       for (x = 0; x <= 31; x++) {
         for (z = 0; z <= 31; z++) {
           region = this.region;
           if (this.region.hasChunk(x, z)) {
-            console.log('has it');
-            console.log('running it now');
             chunk = region.getChunk(x, z);
             if (chunk != null) this.loadChunk(chunk, x, z);
           }
         }
       }
-      return console.log('loop done');
+      total = new Date().getTime() - start;
+      seconds = total / 1000.0;
+      return console.log("processed chunks into " + this.geometry.vertices.length + " vertices in " + seconds + " seconds");
     };
 
     RegionRenderer.prototype.showProgress = function(ratio) {

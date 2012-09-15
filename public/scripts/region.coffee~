@@ -62,7 +62,7 @@ class Region
       data = new Uint8Array(@buffer, @dataView.tell(), length)
       retvalbytes = new Zlib.Inflate(data).decompress()
       nbtReader = new nbt.NBTReader(retvalbytes)
-      retval = nbtReader.read()
+      retval = new chunk.Chunk(nbtReader.read())
       return retval
     catch e
     return null

@@ -77,7 +77,7 @@
         data = new Uint8Array(this.buffer, this.dataView.tell(), length);
         retvalbytes = new Zlib.Inflate(data).decompress();
         nbtReader = new nbt.NBTReader(retvalbytes);
-        retval = new chunk.Chunk(nbtReader.read());
+        retval = nbtReader.read();
         return retval;
       } catch (e) {
 

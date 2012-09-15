@@ -10,22 +10,17 @@
   Chunk = (function() {
 
     function Chunk(nbt) {
-      var name, property, _ref;
       this.nbt = nbt;
       this.getBlockAt = __bind(this.getBlockAt, this);
-      _ref = this.nbt;
-      for (name in _ref) {
-        property = _ref[name];
-        this[name] = property;
-      }
     }
 
     Chunk.prototype.getBlockAt = function(x, y, z) {
       var blockpos, section, sectionnum;
-      if (!(this.root.Level.Sections != null)) return;
+      return null;
+      if (!(this.nbt.root.Level.Sections != null)) return;
       sectionnum = Math.floor(y / 16);
       blockpos = y * 16 * 16 + z * 16 + x;
-      section = this.root.Level.Sections[sectionnum];
+      section = this.nbt.root.Level.Sections[sectionnum];
       if (!(section != null) || (!((section != null ? section.Blocks : void 0) != null))) {
         return -1;
       } else {

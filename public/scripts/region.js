@@ -60,16 +60,15 @@
     Region.prototype.getChunk = function(x, z) {
       var data, length, nbtReader, numSectors, offset, retval, retvalbytes, sectorNumber, version;
       try {
-        if (this.outOfBounds(x, z)) return null;
-        offset = this.getOffset(x, z);
+        if (this.outOfBounds(z, x)) return null;
+        offset = this.getOffset(z, x);
         if (offset === 0) return null;
         sectorNumber = new Int32Array(1);
         numSectors = new Uint8Array(1);
-        offset = this.getOffset(x, z);
+        offset = this.getOffset(z, x);
         sectorNumber = offset >> 16;
         numSectors = (offset >> 8) & 0xFF;
         if (numSectors === 0) return null;
-        if (sectorNumber + numSectors > this.sectorFree.length) return null;
         this.dataView.seek(sectorNumber * SECTOR_BYTES);
         length = this.dataView.getInt32();
         if (length > SECTOR_BYTES * numSectors) return null;

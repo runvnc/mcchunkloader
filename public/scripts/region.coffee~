@@ -36,21 +36,21 @@ class Region
 
   getChunk: (x, z) =>
     try 
-      if @outOfBounds x, z
+      if @outOfBounds z, x
         return null
 
-      offset = @getOffset x, z
+      offset = @getOffset z, x
       if offset is 0          
         return null    
 
       sectorNumber = new Int32Array(1)
       numSectors = new Uint8Array(1)
-      offset = @getOffset(x,z)
+      offset = @getOffset(z,x)
       sectorNumber = offset >> 16     #sectorNumber    
       numSectors = (offset >> 8) & 0xFF    #numSectors
       if numSectors is 0 then return null
-      if sectorNumber + numSectors > @sectorFree.length
-        return null      
+      #if sectorNumber + numSectors > @sectorFree.length
+      #  return null      
 
       @dataView.seek sectorNumber * SECTOR_BYTES
       length = @dataView.getInt32()
@@ -62,7 +62,7 @@ class Region
       data = new Uint8Array(@buffer, @dataView.tell(), length)
       retvalbytes = new Zlib.Inflate(data).decompress()
       nbtReader = new nbt.NBTReader(retvalbytes)
-      retval = new chunk.Chunk(nbtReader.read())
+      retval = nbtReader.read()
       return retval
     catch e
     return null

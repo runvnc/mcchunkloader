@@ -1,0 +1,68 @@
+  ###
+  loadChunk: (chunk, chunkX, chunkZ) =>
+    options =
+      nbt: chunk
+      pos:
+        x: chunkX
+        z: chunkZ
+    view = new ChunkView(options)    
+    view.extractChunk()
+
+    console.log view
+    triangles = view.indices.length / 3
+    vertexIndexArray = new Int16Array(view.indices.length)
+    for i in [0...view.indices.length]
+      vertexIndexArray[i] = view.indices[i]
+
+    #vertexPositionArray contains 3 values per vertex, for the x, y and z coordinates.
+    #Then 9 values (3 vertices) will be 1 face/triangle.
+    vertexPositionArray = new Float32Array(view.vertices.length)
+    for i in [0...view.vertices.length]
+      vertexPositionArray[i] = view.vertices[i]
+
+    # The attributes object contains information about how to treat the indexes, positions, normals arrays etc.
+    # For example, indexes have an itemSize of 1, in other words, 1 array value per vertex index.
+    # Position has 3 array values per vertex, hence, itemSize: 3.
+    # array and numItems simply contain the typed array and its length.
+    attributes =
+      index:
+        itemSize: 1
+        array: vertexIndexArray
+        numItems: vertexIndexArray.length
+      position:
+        itemSize: 3
+        array: vertexPositionArray
+        numItems: vertexPositionArray.length
+    #console.log attributes
+    # Create the BufferGeometry, and assign attributes to the instance.
+    geometry = new THREE.BufferGeometry()
+    geometry.attributes = attributes
+        
+    # Not completely sure how this would be in any setup, but we set it to start from the beginning of the arrays
+    # And last for as long as there are enough vertex indexes to work with.
+    geometry.offsets = [{
+      start: 0
+      count: vertexIndexArray.length
+      index: 0
+    }]
+      
+    # These are strictly not needed, but they're available, like on any normal Geometry.
+    geometry.computeBoundingBox()
+    geometry.computeBoundingSphere()
+    geometry.computeVertexNormals()
+
+    # Create the mesh and material
+    #material = new THREE.MeshPhongMaterial
+      color: 0x773333
+      depthTest: false
+      wireframe: true
+      transparent: true
+    mesh = new THREE.Mesh geometry, material
+    mesh.scale.x = 10.0
+    mesh.scale.y = 10.0
+    mesh.scale.z = 10.0
+    @scene.add mesh
+    @camera.lookAt mesh
+    #console.log mesh
+    return null
+

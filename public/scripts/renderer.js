@@ -31,7 +31,6 @@
       this.load = __bind(this.load, this);
       this.loadTexture = __bind(this.loadTexture, this);
       this.loadChunk = __bind(this.loadChunk, this);
-      this.getBlockAt = __bind(this.getBlockAt, this);
       this.mouseX = 0;
       this.mouseY = 0;
       this.windowHalfX = window.innerWidth / 2;
@@ -40,44 +39,6 @@
       this.animate();
       this.load();
     }
-
-    RegionRenderer.prototype.getBlockAt = function(chunk, x, y, z) {
-      var blockpos, offset, section, sectionnum, _i, _len, _ref;
-      if (!(chunk.root.Level.Sections != null)) return -1;
-      sectionnum = Math.floor(y / 16);
-      offset = ((y % 16) * 256) + (z * 16) + x;
-      blockpos = offset / 2;
-      _ref = chunk.root.Level.Sections;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        section = _ref[_i];
-        if ((section != null) && section.Y === sectionnum) {
-          return section.Blocks[blockpos];
-        }
-      }
-      return -1;
-    };
-
-    /*
-      loadChunk: (chunk, chunkX, chunkZ) =>
-        #@showProgress (x*z) / (32*32)
-        for x in [0..15]
-          for y in [0..255]
-            for z in [0..15]           
-               id = @getBlockAt chunk, x, y, z
-               if id? and id > 0
-                 block = blockInfo['_'+id.toString()]
-                 if block?
-                   vertex = new THREE.Vector3()
-                   vertex.x = (chunkX*16 + x) * SCALE
-                   vertex.y = y * SCALE
-                   vertex.z = (chunkZ*16 + z) * SCALE
-                   @geometry.vertices.push vertex    
-                   color = new THREE.Color(0xffffff)
-                   color.setRGB block.rgba[0], block.rgba[1], block.rgba[2]
-                   @colors.push color
-              
-        return null
-    */
 
     RegionRenderer.prototype.loadChunk = function(chunk, chunkX, chunkZ) {
       var attributes, centerX, centerY, centerZ, geometry, i, material, mesh, options, triangles, uvArray, vertexIndexArray, vertexPositionArray, view, _ref, _ref2, _ref3;
@@ -156,7 +117,7 @@
       };
       image.src = path;
       texture = new THREE.Texture(image, new THREE.UVMapping(), THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.NearestFilter, THREE.LinearMipMapLinearFilter);
-      return new THREE.MeshLambertMaterial({
+      return new THREE.MeshPhongMaterial({
         map: texture
       });
     };
@@ -176,8 +137,8 @@
       particles.rotation.y = Math.random() * 6;
       particles.rotation.z = 0;
       start = new Date().getTime();
-      for (x = 10; x <= 15; x++) {
-        for (z = 10; z <= 15; z++) {
+      for (x = 0; x <= 6; x++) {
+        for (z = 0; z <= 6; z++) {
           region = this.region;
           if (true || this.region.hasChunk(x, z)) {
             try {
@@ -208,12 +169,10 @@
       this.camera.position.z = 50;
       this.camera.position.y = 25;
       this.scene = new THREE.Scene();
+      this.scene.add(new THREE.AmbientLight(0x444444));
       directionalLight = new THREE.DirectionalLight(0xcccccc);
       directionalLight.position.set(9, 30, 300);
       this.scene.add(directionalLight);
-      this.pointLight = new THREE.PointLight(0xddcccc, 1, 500);
-      this.pointLight.position.set(0, 0, 0);
-      this.scene.add(this.pointLight);
       this.renderer = new THREE.WebGLRenderer();
       this.renderer.setSize(window.innerWidth, window.innerHeight);
       container.appendChild(this.renderer.domElement);
@@ -247,7 +206,6 @@
       var time;
       time = Date.now() * 0.00005;
       this.controls.update(this.clock.getDelta());
-      this.pointLight.position.set(this.camera.position.x, this.camera.position.y, this.camera.position.z);
       return this.renderer.render(this.scene, this.camera);
     };
 

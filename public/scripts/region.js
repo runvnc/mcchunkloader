@@ -58,38 +58,73 @@
     }
 
     Region.prototype.getChunk = function(x, z) {
-      var data, length, nbtReader, numSectors, offset, retval, retvalbytes, sectorNumber, version;
-      try {
-        if (this.outOfBounds(z, x)) return null;
-        offset = this.getOffset(z, x);
-        if (offset === 0) return null;
-        sectorNumber = new Int32Array(1);
-        numSectors = new Uint8Array(1);
-        offset = this.getOffset(z, x);
-        sectorNumber = offset >> 16;
-        numSectors = (offset >> 8) & 0xFF;
-        if (numSectors === 0) return null;
-        this.dataView.seek(sectorNumber * SECTOR_BYTES);
+      var data, length, nbtReader, offset, retval, retvalbytes, version;
+      offset = this.getOffset(x, z);
+      if (offset === 0) {
+        console.log("Not able to show chunk at (" + x + ", " + z + ")");
+        return null;
+      } else {
+        this.dataView.seek(offset);
         length = this.dataView.getInt32();
-        if (length > SECTOR_BYTES * numSectors) return null;
         version = this.dataView.getUint8();
         data = new Uint8Array(this.buffer, this.dataView.tell(), length);
         retvalbytes = new Zlib.Inflate(data).decompress();
         nbtReader = new nbt.NBTReader(retvalbytes);
         retval = nbtReader.read();
         return retval;
-      } catch (e) {
-
       }
-      return null;
     };
+
+    /*
+      getChunk: (x, z) =>
+        try 
+          if @outOfBounds z, x
+            return null
+    
+          offset = @getOffset z, x
+          if offset is 0          
+            return null    
+    
+          sectorNumber = new Int32Array(1)
+          numSectors = new Uint8Array(1)
+          offset = @getOffset(z,x)
+          sectorNumber = offset >> 16     #sectorNumber    
+          numSectors = (offset >> 8) & 0xFF    #numSectors
+          if numSectors is 0 then return null
+          #if sectorNumber + numSectors > @sectorFree.length
+          #  return null      
+    
+          @dataView.seek sectorNumber * SECTOR_BYTES
+          length = @dataView.getInt32()
+    
+          if length > SECTOR_BYTES * numSectors
+            return null      
+    
+          version = @dataView.getUint8()
+          data = new Uint8Array(@buffer, @dataView.tell(), length)
+          retvalbytes = new Zlib.Inflate(data).decompress()
+          nbtReader = new nbt.NBTReader(retvalbytes)
+          retval = nbtReader.read()
+          return retval
+        catch e
+        return null
+    */
 
     Region.prototype.outOfBounds = function(x, z) {
       return x < 0 || x >= 32 || z < 0 || z >= 32;
     };
 
     Region.prototype.getOffset = function(x, z) {
-      return this.offsets[x + z * 32];
+      var bytes, locationOffset, offset, sectors;
+      locationOffset = 4 * (x + z * 32);
+      bytes = new Uint8Array(this.buffer, locationOffset, 4);
+      sectors = bytes[3];
+      offset = bytes[0] << 16 | bytes[1] << 8 | bytes[2];
+      if (offset === 0 || sectors === 0) {
+        return 0;
+      } else {
+        return offset * 4096;
+      }
     };
 
     Region.prototype.hasChunk = function(x, z) {

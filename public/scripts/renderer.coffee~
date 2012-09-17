@@ -23,41 +23,6 @@ class RegionRenderer
     @animate()
     @load()
 
-  getBlockAt: (chunk, x, y, z) =>
-    if not chunk.root.Level.Sections? then return -1
-    sectionnum = Math.floor (y / 16) 
-    #blockpos = z + x*16  #y*16*16 + z*16 + x
-
-    offset = ((y%16)*256) + (z * 16) + x
-    blockpos = offset / 2
-
-    for section in chunk.root.Level.Sections
-      if section? and section.Y is sectionnum
-        return section.Blocks[blockpos]
-    return -1
-
-  ###
-  loadChunk: (chunk, chunkX, chunkZ) =>
-    #@showProgress (x*z) / (32*32)
-    for x in [0..15]
-      for y in [0..255]
-        for z in [0..15]           
-           id = @getBlockAt chunk, x, y, z
-           if id? and id > 0
-             block = blockInfo['_'+id.toString()]
-             if block?
-               vertex = new THREE.Vector3()
-               vertex.x = (chunkX*16 + x) * SCALE
-               vertex.y = y * SCALE
-               vertex.z = (chunkZ*16 + z) * SCALE
-               @geometry.vertices.push vertex    
-               color = new THREE.Color(0xffffff)
-               color.setRGB block.rgba[0], block.rgba[1], block.rgba[2]
-               @colors.push color
-          
-    return null
-  ###  
-
   loadChunk: (chunk, chunkX, chunkZ) =>
     options =
       nbt: chunk
@@ -147,7 +112,7 @@ class RegionRenderer
     image.src = path
     texture  = new THREE.Texture( image,  new THREE.UVMapping(), THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.NearestFilter, THREE.LinearMipMapLinearFilter )    
 
-    return new THREE.MeshLambertMaterial( { map: texture } )
+    return new THREE.MeshPhongMaterial( { map: texture } )
 
   load: =>
     @colors = []    
@@ -161,8 +126,8 @@ class RegionRenderer
     particles.rotation.z = 0
     #@scene.add particles
     start = new Date().getTime()
-    for x in [0..5]
-      for z in [0..5]
+    for x in [0..15]
+      for z in [0..15]
         region = @region
         if true or @region.hasChunk x,z
           try
@@ -193,14 +158,14 @@ class RegionRenderer
     
     @scene = new THREE.Scene()
 
-    #@scene.add new THREE.AmbientLight(0x444444)
+    @scene.add new THREE.AmbientLight(0x444444)
     directionalLight = new THREE.DirectionalLight( 0xcccccc )
     directionalLight.position.set( 9, 30, 300 )
     @scene.add directionalLight
 
-    @pointLight = new THREE.PointLight(0xddcccc, 1, 500)
-    @pointLight.position.set(0,0,0)
-    @scene.add @pointLight
+    #@pointLight = new THREE.PointLight(0xddcccc, 1, 500)
+    #@pointLight.position.set(0,0,0)
+    #@scene.add @pointLight
 
     @renderer = new THREE.WebGLRenderer()
     @renderer.setSize window.innerWidth, window.innerHeight
@@ -239,7 +204,7 @@ class RegionRenderer
     #@camera.position.x += ( @mouseX - @camera.position.x ) * 0.05
     #@camera.position.y += ( - @mouseY - @camera.position.y ) * 0.05
     @controls.update @clock.getDelta()
-    @pointLight.position.set @camera.position.x, @camera.position.y, @camera.position.z
+    #@pointLight.position.set @camera.position.x, @camera.position.y, @camera.position.z
     #@camera.lookAt @scene.position
     #for i in [0..@scene.children.length-1]
     ##  object = @scene.children[ i ]

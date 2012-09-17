@@ -129,9 +129,7 @@ var jDataView = function (buffer, byteOffset, byteLength, littleEndian) {
               console.log('byteOffset is undefined');
             } 
             console.log(e);
-            console.log('byteOffset is ');
-            console.log(byteOffset);
-            console.log(type);
+            console.log('byteOffset is ' + byteOffset + ' and type is ' + type);
           }
 				}
 			})(type, this);

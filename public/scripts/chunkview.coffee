@@ -18,24 +18,30 @@ class ChunkView
     @pos = options.pos
     @rotcent = true
     @filled = []
-    @ymin = 50
+    @nomatch = {}
+    @ymin = 0
+    @showStuff = '' # 'diamondsmoss'
     if options.ymin? then @ymin = options.ymin
     #if options.sminx? then @sminx = options.sminx else @sminx = 15
     #@sminz = options.sminz
     #@smaxx = options.smaxx
     #@smaxz = options.smaxz
 
+  
   getBlockAt: (x, y, z) =>
     if not @nbt.root.Level.Sections? then return -1
-    sectionnum = Math.floor(y / 16)
+    sectionnum = Math.floor( (y / 16) )
     #blockpos = z + x*16  #y*16*16 + z*16 + x
 
     offset = ((y%16)*256) + (z * 16) + x
-    blockpos = offset #/ 2
+    blockpos = offset
 
     for section in @nbt.root.Level.Sections
-      if section? and section.Y is sectionnum
+      if section isnt undefined and section.Y * 1 is sectionnum * 1
+        #console.log "#{x}, #{y}, #{z} is " + section.Blocks[blockpos]     
         return section.Blocks[blockpos]
+    @nomatch[y] = true
+    #console.log "NO MATCH for block at #{x}, #{y}, #{z}"
     return -1
 
   transNeighbors: (x, y, z) =>
@@ -45,8 +51,8 @@ class ChunkView
         for k in [z-1..z+1]
           if k >= ChunkSizeZ then continue
           if not (i is x and j is y and k is z)
-            blockID = @getBlockAt x, y, z
-            if blockID is 0 or blockID is -1
+            blockID = @getBlockAt i, j, k
+            if blockID is 0 or blockID is -1 #or blockID is -10              
               return true
 
     return false
@@ -62,23 +68,30 @@ class ChunkView
     for x in [0..ChunkSizeX-1]
       for z in [0..ChunkSizeZ-1]
         for y in [@ymin..255]
-          blockID = @getBlockAt x, y, z          
-          if not blockID? then blockID = 0
-          blockType = blockInfo['_-1']
-          blockID = '_' + blockID.toString()
+          id = @getBlockAt x, y, z
+          blockType = blockInfo['_'+id]
            
-          if blockInfo[blockID]?
-            blockType = blockInfo[blockID]
-          else
-            blockType = blockInfo['_-1']
+          if not blockType? then id = -1
+          if not blockType?.t? then id = -1
           show = false
-          show = (blockType.id > 0)
-          #if y<60 and @showStuff is 'diamondsmoss'
-          #  show = ( blockType.id is 48 or blockType.id is 56 or blockType.id is 4 )
-          #else if blockType.id isnt 0 and blockType.id isnt -1 then show = @transNeighbors x, y, z
+          show = (id > 0)
           
-          if show then @addBlock [x,y,z]
+          if y<60 and @showStuff is 'diamondsmoss'
+            show = ( id is 48 or id is 56 or id is 4 )
+          else
+            if id isnt 0 and id isnt -1 and id isnt -10
+              show = @transNeighbors x, y, z
+            else
+              show = false
+          
+          if show
+            @addBlock [x,y,z]
+          else
+            blah = 1
+           
     @renderPoints()
+    console.log @nomatch
+    console.log  @nbt.root.Level.Sections
 
   addBlock: (position) =>
     verts = [position[0], position[1], position[2]]
@@ -130,7 +143,7 @@ class ChunkView
   hasNeighbor: (p, offset0, offset1, offset2) =>
     n = [p[0] + offset0, p[1] + offset1, p[2] + offset2]
     info = @getBlockType(n[0], n[1], n[2])
-    info.id > 0
+    info.id > 0 and info.t?
 
   addTexturedBlock: (p) =>
     a = p

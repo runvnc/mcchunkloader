@@ -37,6 +37,7 @@
       var tagName;
       tagName = new TAG_String(this.reader);
       this.name = tagName.read();
+      console.log('readName : ' + this.name);
       return this.name;
     };
 
@@ -225,7 +226,7 @@
       arr = [];
       if (length === 0) return arr;
       for (i = 0, _ref = length - 1; 0 <= _ref ? i <= _ref : i >= _ref; 0 <= _ref ? i++ : i--) {
-        tag = this.reader.read(type, '_' + i.toString());
+        tag = this.reader.read(type);
         arr.push(tag);
       }
       return arr;
@@ -245,11 +246,16 @@
     }
 
     TAG_Byte_Array.prototype.read = function() {
-      var arr, length, type;
+      var arr, length, seekTo, type;
       type = 1;
       length = this.reader.getInt32();
+      console.log('TAG_Byte_Array length is ' + length);
+      console.log('Current dataview position is ' + this.reader.dataview.tell());
       arr = new Uint8Array(this.reader.dataview.buffer, this.reader.dataview.tell(), length);
-      this.reader.dataview.seek(this.reader.dataview.tell() + length);
+      seekTo = this.reader.dataview.tell() + length;
+      console.log('Increasing dataview position by ' + length + ' to ' + seekTo);
+      this.reader.dataview.seek(seekTo);
+      console.log('..OK');
       return arr;
     };
 
@@ -291,17 +297,26 @@
     }
 
     TAG_Compound.prototype.read = function() {
-      var i, key, obj, tag, val;
+      var bob, i, key, obj, tag, val;
       obj = {};
       i = 0;
       tag = 'dummy';
       while ((tag != null) && tag !== '=END=' && i < 16) {
-        tag = this.reader.read();
-        if ((tag != null) && tag !== '=END=') {
-          for (key in tag) {
-            val = tag[key];
-            obj[key] = val;
+        try {
+          tag = this.reader.read();
+          if ((tag != null) && tag !== '=END=') {
+            for (key in tag) {
+              val = tag[key];
+              if (key === 'Y') {
+                bob = 'test';
+                console.log('Found a Y its ' + val);
+              }
+              obj[key] = val;
+            }
           }
+        } catch (e) {
+          console.log('Error in TAG_Compound');
+          console.log(e);
         }
         i++;
       }
@@ -363,66 +378,79 @@
 
     NBTReader.prototype.read = function(typespec) {
       var name, name2, ret, tag, type, typeStr;
-      if (this.dataview.tell() === this.nbtbytes.length) return;
-      type = null;
-      if (!(typespec != null)) {
-        type = this.getUint8();
-        if (!(type != null)) return null;
-      } else {
-        type = typespec;
+      try {
+        type = null;
+        if (!(typespec != null)) {
+          type = this.getUint8();
+          if (!(type != null)) {
+            console.log('problem with type in nbt. type is:');
+            console.log(type);
+          }
+        } else {
+          type = typespec;
+        }
+        typeStr = '_' + type.toString();
+        name = tags[typeStr];
+        switch (name) {
+          case 'TAG_End':
+            tag = new TAG_End(this);
+            break;
+          case 'TAG_Byte':
+            tag = new TAG_Byte(this);
+            break;
+          case 'TAG_Short':
+            tag = new TAG_Short(this);
+            break;
+          case 'TAG_Int':
+            tag = new TAG_Int(this);
+            break;
+          case 'TAG_Long':
+            tag = new TAG_Long(this);
+            break;
+          case 'TAG_Float':
+            tag = new TAG_Float(this);
+            break;
+          case 'TAG_Double':
+            tag = new TAG_Double(this);
+            break;
+          case 'TAG_Byte_Array':
+            tag = new TAG_Byte_Array(this);
+            break;
+          case 'TAG_Int_Array':
+            tag = new TAG_Int_Array(this);
+            break;
+          case 'TAG_String':
+            tag = new TAG_String(this);
+            break;
+          case 'TAG_List':
+            tag = new TAG_List(this);
+            break;
+          case 'TAG_Compound':
+            tag = new TAG_Compound(this);
+            break;
+          default:
+            tag = new TAG_Unknown(this);
+        }
+        if (name === 'TAG_End') return '=END=';
+        ret = {};
+        name2 = '';
+        if (!(typespec != null)) {
+          if (name !== 'TAG_End') {
+            name2 = tag.readName();
+            if (name === 'TAG_Compound' && name2 === '') name2 = 'root';
+          } else {
+            name2 = 'END';
+          }
+          ret[name2] = tag.read();
+        } else {
+          ret = tag.read();
+        }
+        return ret;
+      } catch (e) {
+        console.log('Error in nbt: ' + e.message);
+        console.log(e.stack);
+        return null;
       }
-      typeStr = '_' + type.toString();
-      name = tags[typeStr];
-      switch (name) {
-        case 'TAG_End':
-          tag = new TAG_End(this);
-          break;
-        case 'TAG_Byte':
-          tag = new TAG_Byte(this);
-          break;
-        case 'TAG_Short':
-          tag = new TAG_Short(this);
-          break;
-        case 'TAG_Int':
-          tag = new TAG_Int(this);
-          break;
-        case 'TAG_Long':
-          tag = new TAG_Long(this);
-          break;
-        case 'TAG_Float':
-          tag = new TAG_Float(this);
-          break;
-        case 'TAG_Double':
-          tag = new TAG_Double(this);
-          break;
-        case 'TAG_Byte_Array':
-          tag = new TAG_Byte_Array(this);
-          break;
-        case 'TAG_Int_Array':
-          tag = new TAG_Int_Array(this);
-          break;
-        case 'TAG_String':
-          tag = new TAG_String(this);
-          break;
-        case 'TAG_List':
-          tag = new TAG_List(this);
-          break;
-        case 'TAG_Compound':
-          tag = new TAG_Compound(this);
-          break;
-        default:
-          tag = new TAG_Unknown(this);
-      }
-      ret = {};
-      name2 = '';
-      if (!(typespec != null)) {
-        name2 = tag.readName();
-        if (name === 'TAG_Compound' && name2 === '') name2 = 'root';
-        ret[name2] = tag.read();
-      } else {
-        ret = tag.read();
-      }
-      return ret;
     };
 
     return NBTReader;

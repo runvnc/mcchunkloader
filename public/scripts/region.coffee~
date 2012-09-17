@@ -34,6 +34,23 @@ class Region
         for sectorNum in [0..((offset>>8) & 0xFF)-1]
            @sectorFree[(offset >> 16) + sectorNum] = false
 
+
+  getChunk: (x, z) =>
+    offset = @getOffset x,z
+    if offset is 0
+      console.log "Not able to show chunk at (#{x}, #{z})"
+      return null
+    else
+      @dataView.seek offset
+      length = @dataView.getInt32()
+      version = @dataView.getUint8()
+      data = new Uint8Array(@buffer, @dataView.tell(), length)
+      retvalbytes = new Zlib.Inflate(data).decompress()
+      nbtReader = new nbt.NBTReader(retvalbytes)
+      retval = nbtReader.read()
+      return retval
+
+  ###
   getChunk: (x, z) =>
     try 
       if @outOfBounds z, x
@@ -66,12 +83,20 @@ class Region
       return retval
     catch e
     return null
+  ###
 
   outOfBounds: (x, z) =>
     x < 0 or x >= 32 or z < 0 or z >= 32
 
   getOffset: (x, z) =>
-    @offsets[x + z * 32]
+    locationOffset = 4 * (x + z * 32)
+    bytes = new Uint8Array(@buffer, locationOffset, 4)
+    sectors = bytes[3]
+    offset = bytes[0]<<16|bytes[1]<<8|bytes[2] # 4KB sector the chunk is in 
+    if offset is 0 or sectors is 0
+      return 0
+    else
+      return offset * 4096
 
   hasChunk: (x, z) =>
     offset = @getOffset(x, z)

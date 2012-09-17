@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
         <style>
          body {
-           background-color: #fff; //#000000;
+           background-color: #000; #37698C;
            margin: 0px;
            overflow: hidden;
            font-family:Monospace;

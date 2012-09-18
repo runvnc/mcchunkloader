@@ -42,7 +42,7 @@
       this.filled = [];
       this.nomatch = {};
       this.ymin = 0;
-      this.showStuff = '';
+      this.showStuff = 'diamondsmoss';
       if (options.ymin != null) this.ymin = options.ymin;
     }
 
@@ -72,7 +72,7 @@
             if (k >= ChunkSizeZ) continue;
             if (!(i === x && j === y && k === z)) {
               blockID = this.getBlockAt(i, j, k);
-              if (blockID === 0 || blockID === -1) return true;
+              if (blockID === 0 || blockID === -1 || blockID === -10) return true;
             }
           }
         }
@@ -98,7 +98,7 @@
             show = false;
             show = id > 0;
             if (y < 60 && this.showStuff === 'diamondsmoss') {
-              show = id === 48 || id === 56 || id === 4;
+              show = id === 48 || id === 56 || id === 4 || id === 52;
             } else {
               if (id !== 0 && id !== -1 && id !== -10) {
                 show = this.transNeighbors(x, y, z);
@@ -182,11 +182,16 @@
       return t.rgba;
     };
 
-    ChunkView.prototype.hasNeighbor = function(p, offset0, offset1, offset2) {
+    ChunkView.prototype.hasNeighbor = function(bl, p, offset0, offset1, offset2) {
       var info, n;
+      return false;
       n = [p[0] + offset0, p[1] + offset1, p[2] + offset2];
       info = this.getBlockType(n[0], n[1], n[2]);
-      return info.id > 0 && (info.t != null);
+      if (((info != null ? info.id : void 0) != null) === 8 || ((info != null ? info.id : void 0) != null) === 9) {
+        return true;
+      } else {
+        return false;
+      }
     };
 
     ChunkView.prototype.addTexturedBlock = function(p) {
@@ -222,8 +227,9 @@
     };
 
     ChunkView.prototype.addCubePoint = function(a, xdelta, ydelta, zdelta) {
-      var p2, p3;
-      p2 = [a[0] + xdelta * 0.5, a[1] + ydelta * 0.5, a[2] + zdelta * 0.5];
+      var p2, p3, s;
+      s = xdelta * 0.001;
+      p2 = [a[0] + xdelta * 0.5 + s, a[1] + ydelta * 0.5 + s, a[2] + zdelta * 0.5 + s];
       p3 = this.calcPoint(p2);
       this.vertices.push(p3[0]);
       this.vertices.push(p3[1]);
@@ -231,11 +237,12 @@
     };
 
     ChunkView.prototype.typeToCoords = function(type) {
-      var x, y;
+      var s, x, y;
       if (type.t != null) {
         x = type.t[0];
         y = 15 - type.t[1];
-        return [x / 16.0, y / 16.0, (x + 1.0) / 16.0, y / 16.0, (x + 1.0) / 16.0, (y + 1.0) / 16.0, x / 16.0, (y + 1.0) / 16.0];
+        s = 0.0;
+        return [x / 16.0 + s, y / 16.0 + s, (x + 1.0) / 16.0 - s, y / 16.0 + s, (x + 1.0) / 16.0 - s, (y + 1.0) / 16.0 - s, x / 16.0 + s, (y + 1.0) / 16.0 - s];
       } else {
         return [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
       }
@@ -245,12 +252,12 @@
       var clr, coords, show, totfaces;
       coords = this.typeToCoords(bl);
       show = {};
-      show.front = !(this.hasNeighbor(p, 0, 0, 1));
-      show.back = !(this.hasNeighbor(p, 0, 0, -1));
-      show.top = !(this.hasNeighbor(p, 0, 1, 0));
-      show.bottom = !(this.hasNeighbor(p, 0, -1, 0));
-      show.left = !(this.hasNeighbor(p, -1, 0, 0));
-      show.right = !(this.hasNeighbor(p, 1, 0, 0));
+      show.front = !(this.hasNeighbor(bl, p, 0, 0, 1));
+      show.back = !(this.hasNeighbor(bl, p, 0, 0, -1));
+      show.top = !(this.hasNeighbor(bl, p, 0, 1, 0));
+      show.bottom = !(this.hasNeighbor(bl, p, 0, -1, 0));
+      show.left = !(this.hasNeighbor(bl, p, -1, 0, 0));
+      show.right = !(this.hasNeighbor(bl, p, 1, 0, 0));
       totfaces = 0;
       if (show.front) totfaces++;
       if (show.back) totfaces++;

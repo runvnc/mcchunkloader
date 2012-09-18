@@ -31,6 +31,7 @@
       this.load = __bind(this.load, this);
       this.loadTexture = __bind(this.loadTexture, this);
       this.loadChunk = __bind(this.loadChunk, this);
+      this.mcCoordsToWorld = __bind(this.mcCoordsToWorld, this);
       this.mouseX = 0;
       this.mouseY = 0;
       this.windowHalfX = window.innerWidth / 2;
@@ -39,6 +40,24 @@
       this.animate();
       this.load();
     }
+
+    RegionRenderer.prototype.mcCoordsToWorld = function(x, y, z) {
+      var chunkX, chunkZ, posX, posY, posZ, ret, xmod, zmod;
+      chunkX = x % 32;
+      chunkZ = z % 32;
+      posX = x % (32 * 16);
+      posZ = x % (32 * 16);
+      posY = y;
+      xmod = 15 * 16;
+      zmod = 15 * 16;
+      ret = new THREE.Vector3();
+      ret.x = (-1 * xmod) + posX + chunkX * 16 * 1.00000;
+      ret.y = (posY + 1) * 1.0;
+      ret.z = (-1 * zmod) + posZ + chunkZ * 16 * 1.00000;
+      ret.x += 700;
+      ret.z += 700;
+      return ret;
+    };
 
     RegionRenderer.prototype.loadChunk = function(chunk, chunkX, chunkZ) {
       var attributes, centerX, centerY, centerZ, geometry, i, material, mesh, options, triangles, uvArray, vertexIndexArray, vertexPositionArray, view, _ref, _ref2, _ref3;
@@ -98,14 +117,12 @@
       mesh.position.x = 700.0;
       mesh.position.y = 0.0;
       mesh.position.z = 700.0;
+      mesh.doubleSided = true;
       this.scene.add(mesh);
       centerX = mesh.position.x + 0.5 * (geometry.boundingBox.max.x - geometry.boundingBox.min.x);
       centerY = mesh.position.y + 0.5 * (geometry.boundingBox.max.y - geometry.boundingBox.min.y);
       centerZ = mesh.position.z + 0.5 * (geometry.boundingBox.max.z - geometry.boundingBox.min.z);
-      this.camera.position.x = centerX;
-      this.camera.position.y = centerY;
-      this.camera.position.z = centerZ;
-      this.camera.lookAt(new THREE.Vector3(centerX, centerY, centerZ));
+      this.camera.lookAt(mesh.position);
       return null;
     };
 
@@ -116,14 +133,15 @@
         return texture.needsUpdate = true;
       };
       image.src = path;
-      texture = new THREE.Texture(image, new THREE.UVMapping(), THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.NearestFilter, THREE.LinearMipMapLinearFilter);
-      return new THREE.MeshPhongMaterial({
-        map: texture
+      texture = new THREE.Texture(image, new THREE.UVMapping(), THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.NearestFilter, THREE.NearestFilter);
+      return new THREE.MeshLambertMaterial({
+        map: texture,
+        transparent: true
       });
     };
 
     RegionRenderer.prototype.load = function() {
-      var chunk, particles, region, seconds, start, total, x, z;
+      var camPos, chunk, particles, region, seconds, start, total, x, z;
       this.colors = [];
       this.geometry = new THREE.Geometry();
       this.geometry.colors = this.colors;
@@ -136,9 +154,15 @@
       particles.rotation.x = 0;
       particles.rotation.y = Math.random() * 6;
       particles.rotation.z = 0;
+      camPos = this.mcCoordsToWorld(0, 70, 0);
+      console.log('camPos');
+      console.log(camPos);
+      this.camera.position.x = camPos.x;
+      this.camera.position.y = camPos.y;
+      this.camera.position.z = camPos.z;
       start = new Date().getTime();
-      for (x = 0; x <= 6; x++) {
-        for (z = 0; z <= 6; z++) {
+      for (x = 0; x <= 10; x++) {
+        for (z = 0; z <= 10; z++) {
           region = this.region;
           if (true || this.region.hasChunk(x, z)) {
             try {
@@ -169,11 +193,13 @@
       this.camera.position.z = 50;
       this.camera.position.y = 25;
       this.scene = new THREE.Scene();
-      this.scene.add(new THREE.AmbientLight(0x444444));
+      this.scene.add(new THREE.AmbientLight(0x888888));
       directionalLight = new THREE.DirectionalLight(0xcccccc);
       directionalLight.position.set(9, 30, 300);
       this.scene.add(directionalLight);
-      this.renderer = new THREE.WebGLRenderer();
+      this.renderer = new THREE.WebGLRenderer({
+        antialias: true
+      });
       this.renderer.setSize(window.innerWidth, window.innerHeight);
       container.appendChild(this.renderer.domElement);
       this.controls = new THREE.FirstPersonControls(this.camera);

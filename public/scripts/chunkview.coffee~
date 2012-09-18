@@ -31,17 +31,14 @@ class ChunkView
   getBlockAt: (x, y, z) =>
     if not @nbt.root.Level.Sections? then return -1
     sectionnum = Math.floor( (y / 16) )
-    #blockpos = z + x*16  #y*16*16 + z*16 + x
-
     offset = ((y%16)*256) + (z * 16) + x
     blockpos = offset
 
     for section in @nbt.root.Level.Sections
       if section isnt undefined and section.Y * 1 is sectionnum * 1
-        #console.log "#{x}, #{y}, #{z} is " + section.Blocks[blockpos]     
+          
         return section.Blocks[blockpos]
-    @nomatch[y] = true
-    #console.log "NO MATCH for block at #{x}, #{y}, #{z}"
+    @nomatch[y] = true    
     return -1
 
   transNeighbors: (x, y, z) =>
@@ -52,7 +49,7 @@ class ChunkView
           if k >= ChunkSizeZ then continue
           if not (i is x and j is y and k is z)
             blockID = @getBlockAt i, j, k
-            if blockID is 0 or blockID is -1 #or blockID is -10              
+            if blockID is 0 or blockID is -1 or blockID is -10              
               return true
 
     return false
@@ -140,10 +137,15 @@ class ChunkView
     t = @getBlockType pos[0], pos[1], pos[2]
     t.rgba
 
-  hasNeighbor: (p, offset0, offset1, offset2) =>
+  hasNeighbor: (bl, p, offset0, offset1, offset2) =>
+    return false
     n = [p[0] + offset0, p[1] + offset1, p[2] + offset2]
     info = @getBlockType(n[0], n[1], n[2])
-    info.id > 0 and info.t?
+    #(info.id > 0 and info?.t?) or (info?.t? is 8 or info?.t? is 9)
+    if info?.id? is 8 or info?.id? is 9
+      return true
+    else
+      return false
 
   addTexturedBlock: (p) =>
     a = p
@@ -188,7 +190,8 @@ class ChunkView
     @cubeCount++
 
   addCubePoint: (a, xdelta, ydelta, zdelta) =>
-    p2 = [a[0] + xdelta * 0.5, a[1] + ydelta * 0.5, a[2] + zdelta * 0.5]
+    s = xdelta * 0.001
+    p2 = [a[0] + xdelta * 0.5 + s, a[1] + ydelta * 0.5 + s, a[2] + zdelta * 0.5 + s]
     p3 = @calcPoint(p2)
     
     @vertices.push p3[0]
@@ -199,19 +202,21 @@ class ChunkView
     if type.t?
       x = type.t[0]
       y = 15 - type.t[1]
-      return [x / 16.0, y / 16.0, (x + 1.0) / 16.0, y / 16.0, (x + 1.0) / 16.0, (y + 1.0) / 16.0, x / 16.0, (y + 1.0) / 16.0]
+      s = 0.0 # -0.0001
+      return [x / 16.0+s, y / 16.0+s, (x + 1.0) / 16.0-s, y / 16.0+s, (x + 1.0) / 16.0-s, (y + 1.0) / 16.0-s, x / 16.0+s, (y + 1.0) / 16.0-s]
     else
       return [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
   addFaces: (i, bl, p) =>
     coords = @typeToCoords(bl)
     show = {}
-    show.front = not (@hasNeighbor(p, 0, 0, 1))
-    show.back = not (@hasNeighbor(p, 0, 0, -1))
-    show.top = not (@hasNeighbor(p, 0, 1, 0))
-    show.bottom = not (@hasNeighbor(p, 0, -1, 0))
-    show.left = not (@hasNeighbor(p, -1, 0, 0))
-    show.right = not (@hasNeighbor(p, 1, 0, 0))
+
+    show.front = not (@hasNeighbor(bl, p, 0, 0, 1))
+    show.back = not (@hasNeighbor(bl, p, 0, 0, -1))
+    show.top = not (@hasNeighbor(bl, p, 0, 1, 0))
+    show.bottom = not (@hasNeighbor(bl, p, 0, -1, 0))
+    show.left = not (@hasNeighbor(bl, p, -1, 0, 0))
+    show.right = not (@hasNeighbor(bl, p, 1, 0, 0))
     totfaces = 0
     totfaces++  if show.front
     totfaces++  if show.back

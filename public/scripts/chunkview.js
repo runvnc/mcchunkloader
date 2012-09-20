@@ -1,6 +1,7 @@
 (function() {
   var ChunkSizeX, ChunkSizeY, ChunkSizeZ, ChunkView, blockInfo, cubeCount, exports, require,
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __indexOf = Array.prototype.indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   if (typeof window !== "undefined" && window !== null) {
     require = window.require;
@@ -38,10 +39,13 @@
       this.getBlockAt = __bind(this.getBlockAt, this);
       this.nbt = options.nbt;
       this.pos = options.pos;
+      this.unknown = [];
+      this.notexture = [];
       this.rotcent = true;
       this.filled = [];
       this.nomatch = {};
-      this.ymin = 0;
+      this.ymin = 55;
+      this.superflat = false;
       this.showStuff = 'diamondsmoss';
       if (options.ymin != null) this.ymin = options.ymin;
     }
@@ -93,11 +97,20 @@
           for (y = _ref3 = this.ymin; _ref3 <= 255 ? y <= 255 : y >= 255; _ref3 <= 255 ? y++ : y--) {
             id = this.getBlockAt(x, y, z);
             blockType = blockInfo['_' + id];
-            if (!(blockType != null)) id = -1;
-            if (!((blockType != null ? blockType.t : void 0) != null)) id = -1;
+            if (id === 20) console.log('foundglass');
+            if (!(blockType != null)) {
+              if (!(__indexOf.call(this.unknown, id) >= 0)) this.unknown.push(id);
+              id = -1;
+            }
+            if (!((blockType != null ? blockType.t : void 0) != null)) {
+              if (!(__indexOf.call(this.notexture, id) >= 0)) {
+                this.notexture.push(id);
+              }
+              id = -1;
+            }
             show = false;
             show = id > 0;
-            if (y < 60 && this.showStuff === 'diamondsmoss') {
+            if (!this.superflat && y < 60 && this.showStuff === 'diamondsmoss') {
               show = id === 48 || id === 56 || id === 4 || id === 52;
             } else {
               if (id !== 0 && id !== -1 && id !== -10) {
@@ -114,9 +127,7 @@
           }
         }
       }
-      this.renderPoints();
-      console.log(this.nomatch);
-      return console.log(this.nbt.root.Level.Sections);
+      return this.renderPoints();
     };
 
     ChunkView.prototype.addBlock = function(position) {
@@ -202,10 +213,10 @@
       this.addCubePoint(a, 1.0, -1.0, 1.0);
       this.addCubePoint(a, 1.0, 1.0, 1.0);
       this.addCubePoint(a, -1.0, 1.0, 1.0);
+      this.addCubePoint(a, 1.0, -1.0, -1.0);
       this.addCubePoint(a, -1.0, -1.0, -1.0);
       this.addCubePoint(a, -1.0, 1.0, -1.0);
       this.addCubePoint(a, 1.0, 1.0, -1.0);
-      this.addCubePoint(a, 1.0, -1.0, -1.0);
       this.addCubePoint(a, -1.0, 1.0, -1.0);
       this.addCubePoint(a, -1.0, 1.0, 1.0);
       this.addCubePoint(a, 1.0, 1.0, 1.0);
@@ -214,10 +225,10 @@
       this.addCubePoint(a, 1.0, -1.0, -1.0);
       this.addCubePoint(a, 1.0, -1.0, 1.0);
       this.addCubePoint(a, -1.0, -1.0, 1.0);
+      this.addCubePoint(a, 1.0, -1.0, 1.0);
       this.addCubePoint(a, 1.0, -1.0, -1.0);
       this.addCubePoint(a, 1.0, 1.0, -1.0);
       this.addCubePoint(a, 1.0, 1.0, 1.0);
-      this.addCubePoint(a, 1.0, -1.0, 1.0);
       this.addCubePoint(a, -1.0, -1.0, -1.0);
       this.addCubePoint(a, -1.0, -1.0, 1.0);
       this.addCubePoint(a, -1.0, 1.0, 1.0);
@@ -249,15 +260,40 @@
     };
 
     ChunkView.prototype.addFaces = function(i, bl, p) {
-      var clr, coords, show, totfaces;
+      var clr, coords, coordsback, coordsbottom, coordsfront, coordsleft, coordsright, coordstop, dirtgrass, show, totfaces, _ref;
       coords = this.typeToCoords(bl);
       show = {};
-      show.front = !(this.hasNeighbor(bl, p, 0, 0, 1));
-      show.back = !(this.hasNeighbor(bl, p, 0, 0, -1));
-      show.top = !(this.hasNeighbor(bl, p, 0, 1, 0));
-      show.bottom = !(this.hasNeighbor(bl, p, 0, -1, 0));
-      show.left = !(this.hasNeighbor(bl, p, -1, 0, 0));
-      show.right = !(this.hasNeighbor(bl, p, 1, 0, 0));
+      coordsfront = coords;
+      coordsback = coords;
+      coordsleft = coords;
+      coordsright = coords;
+      coordstop = coords;
+      coordsbottom = coords;
+      if ((_ref = bl.id) === 37 || _ref === 38) {
+        show = {
+          front: false,
+          back: false,
+          top: false,
+          bottom: false,
+          left: false,
+          right: false
+        };
+      } else {
+        show.front = !(this.hasNeighbor(bl, p, 0, 0, 1));
+        show.back = !(this.hasNeighbor(bl, p, 0, 0, -1));
+        show.top = !(this.hasNeighbor(bl, p, 0, 1, 0));
+        show.bottom = !(this.hasNeighbor(bl, p, 0, -1, 0));
+        show.left = !(this.hasNeighbor(bl, p, -1, 0, 0));
+        show.right = !(this.hasNeighbor(bl, p, 1, 0, 0));
+      }
+      if (bl.id === 2) {
+        dirtgrass = blockInfo['_2x'];
+        coordsfront = this.typeToCoords(dirtgrass);
+        coordsback = coordsfront;
+        coordsleft = coordsfront;
+        coordsright = coordsfront;
+        coordsbottom = coordsfront;
+      }
       totfaces = 0;
       if (show.front) totfaces++;
       if (show.back) totfaces++;
@@ -283,12 +319,12 @@
       if (show.left) {
         this.indices.push.apply(this.indices, [i + 20, i + 21, i + 22, i + 20, i + 22, i + 23]);
       }
-      this.textcoords.push.apply(this.textcoords, coords);
-      this.textcoords.push.apply(this.textcoords, coords);
-      this.textcoords.push.apply(this.textcoords, coords);
-      this.textcoords.push.apply(this.textcoords, coords);
-      this.textcoords.push.apply(this.textcoords, coords);
-      this.textcoords.push.apply(this.textcoords, coords);
+      this.textcoords.push.apply(this.textcoords, coordsfront);
+      this.textcoords.push.apply(this.textcoords, coordsback);
+      this.textcoords.push.apply(this.textcoords, coordstop);
+      this.textcoords.push.apply(this.textcoords, coordsbottom);
+      this.textcoords.push.apply(this.textcoords, coordsright);
+      this.textcoords.push.apply(this.textcoords, coordsleft);
       clr = [bl.rgba[0], bl.rgba[1], bl.rgba[2]];
       this.colors.push.apply(this.colors, clr);
       this.colors.push.apply(this.colors, clr);

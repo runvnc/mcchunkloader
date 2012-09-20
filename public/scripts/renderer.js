@@ -34,6 +34,7 @@
       this.mcCoordsToWorld = __bind(this.mcCoordsToWorld, this);
       this.mouseX = 0;
       this.mouseY = 0;
+      this.textures = {};
       this.windowHalfX = window.innerWidth / 2;
       this.windowHalfY = window.innerHeight / 2;
       this.init();
@@ -48,8 +49,8 @@
       posX = x % (32 * 16);
       posZ = x % (32 * 16);
       posY = y;
-      xmod = 15 * 16;
-      zmod = 15 * 16;
+      xmod = 0;
+      zmod = 0;
       ret = new THREE.Vector3();
       ret.x = (-1 * xmod) + posX + chunkX * 16 * 1.00000;
       ret.y = (posY + 1) * 1.0;
@@ -70,6 +71,10 @@
       };
       view = new ChunkView(options);
       view.extractChunk();
+      console.log('unknown:');
+      console.log(view.unknown);
+      console.log('no texture:');
+      console.log(view.notexture);
       triangles = view.indices.length / 3;
       vertexIndexArray = new Uint16Array(view.indices.length);
       for (i = 0, _ref = view.indices.length; 0 <= _ref ? i < _ref : i > _ref; 0 <= _ref ? i++ : i--) {
@@ -117,7 +122,7 @@
       mesh.position.x = 700.0;
       mesh.position.y = 0.0;
       mesh.position.z = 700.0;
-      mesh.doubleSided = true;
+      mesh.doubleSided = false;
       this.scene.add(mesh);
       centerX = mesh.position.x + 0.5 * (geometry.boundingBox.max.x - geometry.boundingBox.min.x);
       centerY = mesh.position.y + 0.5 * (geometry.boundingBox.max.y - geometry.boundingBox.min.y);
@@ -128,32 +133,22 @@
 
     RegionRenderer.prototype.loadTexture = function(path) {
       var image, texture;
+      if (this.textures[path]) return this.textures[path];
       image = new Image();
       image.onload = function() {
         return texture.needsUpdate = true;
       };
       image.src = path;
       texture = new THREE.Texture(image, new THREE.UVMapping(), THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.NearestFilter, THREE.NearestFilter);
-      return new THREE.MeshLambertMaterial({
+      this.textures[path] = new THREE.MeshLambertMaterial({
         map: texture,
         transparent: true
       });
+      return this.textures[path];
     };
 
     RegionRenderer.prototype.load = function() {
-      var camPos, chunk, particles, region, seconds, start, total, x, z;
-      this.colors = [];
-      this.geometry = new THREE.Geometry();
-      this.geometry.colors = this.colors;
-      this.material = new THREE.ParticleBasicMaterial({
-        size: 5,
-        vertexColors: true
-      });
-      this.material.color.setHSV(200, 200, 200);
-      particles = new THREE.ParticleSystem(this.geometry, this.material);
-      particles.rotation.x = 0;
-      particles.rotation.y = Math.random() * 6;
-      particles.rotation.z = 0;
+      var camPos, chunk, region, seconds, start, total, x, z;
       camPos = this.mcCoordsToWorld(0, 70, 0);
       console.log('camPos');
       console.log(camPos);
@@ -161,8 +156,8 @@
       this.camera.position.y = camPos.y;
       this.camera.position.z = camPos.z;
       start = new Date().getTime();
-      for (x = 0; x <= 10; x++) {
-        for (z = 0; z <= 10; z++) {
+      for (x = 0; x <= 5; x++) {
+        for (z = 0; z <= 5; z++) {
           region = this.region;
           if (true || this.region.hasChunk(x, z)) {
             try {
@@ -177,7 +172,7 @@
       }
       total = new Date().getTime() - start;
       seconds = total / 1000.0;
-      return console.log("processed chunks into " + this.geometry.vertices.length + " vertices in " + seconds + " seconds");
+      return console.log("loaded in " + seconds + " seconds");
     };
 
     RegionRenderer.prototype.showProgress = function(ratio) {
@@ -193,13 +188,17 @@
       this.camera.position.z = 50;
       this.camera.position.y = 25;
       this.scene = new THREE.Scene();
-      this.scene.add(new THREE.AmbientLight(0x888888));
+      this.scene.add(new THREE.AmbientLight(0x444444));
       directionalLight = new THREE.DirectionalLight(0xcccccc);
       directionalLight.position.set(9, 30, 300);
       this.scene.add(directionalLight);
+      this.pointLight = new THREE.PointLight(0xddcccc, 1, 1500);
+      this.pointLight.position.set(0, 250, 0);
+      this.scene.add(this.pointLight);
       this.renderer = new THREE.WebGLRenderer({
         antialias: true
       });
+      this.renderer.setClearColorHex(0x6D839C, 1);
       this.renderer.setSize(window.innerWidth, window.innerHeight);
       container.appendChild(this.renderer.domElement);
       this.controls = new THREE.FirstPersonControls(this.camera);

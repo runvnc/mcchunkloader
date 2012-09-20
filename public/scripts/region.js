@@ -120,7 +120,7 @@
       bytes = new Uint8Array(this.buffer, locationOffset, 4);
       sectors = bytes[3];
       offset = bytes[0] << 16 | bytes[1] << 8 | bytes[2];
-      if (offset === 0 || sectors === 0) {
+      if (offset === 0) {
         return 0;
       } else {
         return offset * 4096;

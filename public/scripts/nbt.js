@@ -37,7 +37,6 @@
       var tagName;
       tagName = new TAG_String(this.reader);
       this.name = tagName.read();
-      console.log('readName : ' + this.name);
       return this.name;
     };
 
@@ -249,13 +248,9 @@
       var arr, length, seekTo, type;
       type = 1;
       length = this.reader.getInt32();
-      console.log('TAG_Byte_Array length is ' + length);
-      console.log('Current dataview position is ' + this.reader.dataview.tell());
       arr = new Uint8Array(this.reader.dataview.buffer, this.reader.dataview.tell(), length);
       seekTo = this.reader.dataview.tell() + length;
-      console.log('Increasing dataview position by ' + length + ' to ' + seekTo);
       this.reader.dataview.seek(seekTo);
-      console.log('..OK');
       return arr;
     };
 
@@ -307,10 +302,7 @@
           if ((tag != null) && tag !== '=END=') {
             for (key in tag) {
               val = tag[key];
-              if (key === 'Y') {
-                bob = 'test';
-                console.log('Found a Y its ' + val);
-              }
+              if (key === 'Y') bob = 'test';
               obj[key] = val;
             }
           }

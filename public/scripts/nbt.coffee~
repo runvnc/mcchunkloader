@@ -75,19 +75,11 @@ class TAG_Byte_Array extends TAG
   read: =>
     type = 1
     length = @reader.getInt32()
-    console.log 'TAG_Byte_Array length is ' + length
-    console.log 'Current dataview position is ' + @reader.dataview.tell()
-    #arr = []
     arr = new Uint8Array(@reader.dataview.buffer, @reader.dataview.tell(), length)
     seekTo = @reader.dataview.tell() + length
-    console.log 'Increasing dataview position by ' + length + ' to ' + seekTo
     @reader.dataview.seek seekTo
-    console.log '..OK'
     arr
-    #@reader.dataview.buffer
-    #for i in [0..length-1]
-    #  arr.push @reader.getInt8()
-    #arr
+
 
 class TAG_Int_Array extends TAG
   read: =>
@@ -109,8 +101,7 @@ class TAG_Compound extends TAG
         if tag? and tag isnt '=END='
           for key, val of tag
             if key is 'Y'
-              bob = 'test'
-              console.log 'Found a Y its ' + val
+              bob = 'test'              
             obj[key] = val
       catch e
         console.log 'Error in TAG_Compound'

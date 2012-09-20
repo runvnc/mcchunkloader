@@ -15,6 +15,7 @@ class RegionRenderer
   constructor: (@region) ->          
     @mouseX = 0
     @mouseY = 0
+    @textures = {}
 
     @windowHalfX = window.innerWidth / 2;
     @windowHalfY = window.innerHeight / 2;
@@ -38,8 +39,8 @@ class RegionRenderer
     posX = x % (32 * 16)
     posZ = x % (32 * 16)
     posY = y
-    xmod = 15 * 16
-    zmod = 15 * 16
+    xmod = 0 #15 * 16
+    zmod = 0 #15 * 16
     ret = new THREE.Vector3()
     ret.x = ((-1 * xmod) + posX + (chunkX) * 16 * 1.00000) 
     ret.y = ((posY + 1) * 1.0) 
@@ -56,6 +57,10 @@ class RegionRenderer
         z: chunkZ
     view = new ChunkView(options)    
     view.extractChunk()
+    console.log 'unknown:'
+    console.log view.unknown
+    console.log 'no texture:'
+    console.log view.notexture
     triangles = view.indices.length / 3
     vertexIndexArray = new Uint16Array(view.indices.length)
     for i in [0...view.indices.length]
@@ -101,7 +106,7 @@ class RegionRenderer
     mesh.position.x = 700.0
     mesh.position.y = 0.0
     mesh.position.z = 700.0
-    mesh.doubleSided = true
+    mesh.doubleSided = false
     @scene.add mesh
 
     centerX = mesh.position.x + 0.5 * ( geometry.boundingBox.max.x - geometry.boundingBox.min.x )
@@ -111,33 +116,25 @@ class RegionRenderer
     return null
 
   loadTexture: (path) =>
+    if @textures[path] then return @textures[path]
     image = new Image()
     image.onload = -> texture.needsUpdate = true
     image.src = path
     texture  = new THREE.Texture( image,  new THREE.UVMapping(), THREE.ClampToEdgeWrapping , THREE.ClampToEdgeWrapping , THREE.NearestFilter, THREE.NearestFilter )    
-
-    return new THREE.MeshLambertMaterial( { map: texture, transparent: true } )
+    @textures[path] = new THREE.MeshLambertMaterial( { map: texture, transparent: true } )
+    return @textures[path]
 
   load: =>
-    @colors = []    
-    @geometry = new THREE.Geometry()
-    @geometry.colors = @colors
-    @material = new THREE.ParticleBasicMaterial( { size: 5, vertexColors: true } )
-    @material.color.setHSV 200, 200, 200
-    particles = new THREE.ParticleSystem( @geometry, @material )
-    particles.rotation.x = 0
-    particles.rotation.y = Math.random() * 6
-    particles.rotation.z = 0
     camPos = @mcCoordsToWorld(0,70,0)
     console.log 'camPos'
     console.log camPos
     @camera.position.x = camPos.x
     @camera.position.y = camPos.y
     @camera.position.z = camPos.z
-    #@scene.add particles
+    
     start = new Date().getTime()
-    for x in [0..10]
-      for z in [0..10]
+    for x in [0..5]
+      for z in [0..5]
         region = @region
         if true or @region.hasChunk x,z
           try
@@ -150,8 +147,7 @@ class RegionRenderer
 
     total = new Date().getTime() - start
     seconds = total / 1000.0
-    console.log "processed chunks into #{@geometry.vertices.length} vertices in #{seconds} seconds"
-
+    console.log "loaded in #{seconds} seconds"
 
   showProgress: (ratio) =>
     $('#proginner').width 300*ratio
@@ -168,19 +164,19 @@ class RegionRenderer
     
     @scene = new THREE.Scene()
 
-    @scene.add new THREE.AmbientLight(0x888888)
+    @scene.add new THREE.AmbientLight(0x444444)
     directionalLight = new THREE.DirectionalLight( 0xcccccc )
     directionalLight.position.set( 9, 30, 300 )
  
     @scene.add directionalLight
 
-    #@pointLight = new THREE.PointLight(0xddcccc, 1, 500)
-    #@pointLight.position.set(0,0,0)
-    #@scene.add @pointLight
+    @pointLight = new THREE.PointLight(0xddcccc, 1, 1500)
+    @pointLight.position.set(0,250,0)
+    @scene.add @pointLight
 
     @renderer = new THREE.WebGLRenderer({  antialias	: true })
  
-    #@renderer.setClearColorHex( 0x000000, 1 )
+    @renderer.setClearColorHex( 0x6D839C, 1 )
     @renderer.setSize window.innerWidth, window.innerHeight
     container.appendChild @renderer.domElement
 

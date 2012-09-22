@@ -93,7 +93,7 @@ class Region
     bytes = new Uint8Array(@buffer, locationOffset, 4)
     sectors = bytes[3]
     offset = bytes[0]<<16|bytes[1]<<8|bytes[2] # 4KB sector the chunk is in 
-    if offset is 0 or sectors is 0
+    if offset is 0 #or sectors is 0
       return 0
     else
       return offset * 4096

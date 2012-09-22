@@ -15,14 +15,23 @@ whichChunks = (region) ->
   chunks = {}
 
 onProgress = (evt) ->
+  $('#proginner').width $('#progouter').width() * (evt.position/evt.total)
+
+delay = (ms, func) ->
+  setTimeout func, ms
 
 done = (arraybuffer) ->
-  data = arraybuffer
-  console.log arraybuffer
-  testregion = new region.Region(data)
-  console.log testregion
-  whichChunks testregion
-  renderer = new render.RegionRenderer(testregion)
+  delay 150, ->
+    start = new Date().getTime()
+    data = arraybuffer
+    console.log arraybuffer
+    testregion = new region.Region(data)
+    console.log testregion
+    whichChunks testregion
+    renderer = new render.RegionRenderer(testregion)
+    total = new Date().getTime() - start
+    seconds = total / 1000.0
+    console.log "loaded in #{seconds} seconds"
 
 exports.runTests = ->
   binaryhttp.loadBinary '/r.0.0.mca', onProgress, done

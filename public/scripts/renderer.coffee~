@@ -51,11 +51,20 @@ class RegionRenderer
   loadChunk: (chunk, chunkX, chunkZ) =>
     options =
       nbt: chunk
+      ymin: 0
       chunkX: chunkX
       chunkZ: chunkZ
-    view = new ChunkView(options)    
-    view.extractChunk()
- 
+    view = new ChunkView(options)
+    try
+      view.extractChunk()
+    catch e
+      console.log "Error in extractChunk"
+      console.log e
+    if view.vertices.length is 0
+      console.log "(#{chunkX}, #{chunkZ}) is blank. chunk is "
+      console.log chunk
+      console.log 'view is '
+      console.log view
     @addTorches view
     vertexIndexArray = new Uint16Array(view.indices.length)
     for i in [0...view.indices.length]
@@ -119,7 +128,6 @@ class RegionRenderer
     @textures[path] = new THREE.MeshLambertMaterial( { map: texture, transparent: true } )
     return @textures[path]
 
-
   load: =>
     startX = 163
     startZ = 197 
@@ -132,8 +140,7 @@ class RegionRenderer
     @camera.position.x = camPos.x
     @camera.position.y = camPos.y
     @camera.position.z = camPos.z
-
-    start = new Date().getTime()
+   
     for x in [minx..maxx]
       for z in [minz..maxz]
         region = @region
@@ -142,13 +149,11 @@ class RegionRenderer
             chunk = region.getChunk x,z
             if chunk?
               @loadChunk chunk, x, z
+            else
+              console.log 'chunk at ' + x + ',' + z + ' is undefined'
           catch e
             console.log e.message
             console.log e.stack
-
-    total = new Date().getTime() - start
-    seconds = total / 1000.0
-    console.log "loaded in #{seconds} seconds"
 
   showProgress: (ratio) =>
     $('#proginner').width 300*ratio

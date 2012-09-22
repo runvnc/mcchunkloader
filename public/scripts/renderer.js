@@ -47,8 +47,6 @@
 
     RegionRenderer.prototype.addTorches = function(view) {
       var coords, pointLight, _i, _len, _ref, _results;
-      console.log('torches: ');
-      console.log(view.torches);
       _ref = view.torches;
       _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -68,7 +66,6 @@
       chunkZ = Math.floor(posZ / 16);
       posX -= chunkX * 16;
       posZ -= chunkZ * 16;
-      console.log("Inside of mcCoordsToWorld chunkX is " + chunkX + " and chunkZ is " + chunkZ);
       verts = chunkview.calcPoint([posX, y, posZ], {
         chunkX: chunkX,
         chunkZ: chunkZ
@@ -87,12 +84,23 @@
       var attributes, centerX, centerY, centerZ, geometry, i, material, mesh, options, uvArray, vertexIndexArray, vertexPositionArray, view, _ref, _ref2, _ref3;
       options = {
         nbt: chunk,
+        ymin: 0,
         chunkX: chunkX,
         chunkZ: chunkZ
       };
       view = new ChunkView(options);
-      view.extractChunk();
-      console.log(view);
+      try {
+        view.extractChunk();
+      } catch (e) {
+        console.log("Error in extractChunk");
+        console.log(e);
+      }
+      if (view.vertices.length === 0) {
+        console.log("(" + chunkX + ", " + chunkZ + ") is blank. chunk is ");
+        console.log(chunk);
+        console.log('view is ');
+        console.log(view);
+      }
       this.addTorches(view);
       vertexIndexArray = new Uint16Array(view.indices.length);
       for (i = 0, _ref = view.indices.length; 0 <= _ref ? i < _ref : i > _ref; 0 <= _ref ? i++ : i--) {
@@ -139,7 +147,6 @@
       mesh = new THREE.Mesh(geometry, material);
       mesh.doubleSided = false;
       this.scene.add(mesh);
-      console.log("ok position is " + view.vertices[0] + "," + view.vertices[1] + "," + view.vertices[2]);
       centerX = mesh.position.x + 0.5 * (geometry.boundingBox.max.x - geometry.boundingBox.min.x);
       centerY = mesh.position.y + 0.5 * (geometry.boundingBox.max.y - geometry.boundingBox.min.y);
       centerZ = mesh.position.z + 0.5 * (geometry.boundingBox.max.z - geometry.boundingBox.min.z);
@@ -164,7 +171,7 @@
     };
 
     RegionRenderer.prototype.load = function() {
-      var camPos, chunk, maxx, maxz, minx, minz, region, seconds, size, start, startX, startZ, total, x, z;
+      var camPos, chunk, maxx, maxz, minx, minz, region, size, startX, startZ, x, z, _results;
       startX = 163;
       startZ = 197;
       camPos = this.mcCoordsToWorld(startX, 70, startZ);
@@ -176,31 +183,33 @@
       this.camera.position.x = camPos.x;
       this.camera.position.y = camPos.y;
       this.camera.position.z = camPos.z;
-      console.log('camPos is ' + camPos.x + ', ' + camPos.y + ', ' + camPos.z);
-      console.log('minx is ' + minx);
-      console.log('minz is ' + minz);
-      start = new Date().getTime();
+      _results = [];
       for (x = minx; minx <= maxx ? x <= maxx : x >= maxx; minx <= maxx ? x++ : x--) {
-        for (z = minz; minz <= maxz ? z <= maxz : z >= maxz; minz <= maxz ? z++ : z--) {
-          region = this.region;
-          if (true || this.region.hasChunk(x, z)) {
-            try {
-              chunk = region.getChunk(x, z);
-              if (chunk != null) {
-                console.log('loading chunk at ' + x + ', ' + z);
-                console.log(chunk);
-                this.loadChunk(chunk, x, z);
+        _results.push((function() {
+          var _results2;
+          _results2 = [];
+          for (z = minz; minz <= maxz ? z <= maxz : z >= maxz; minz <= maxz ? z++ : z--) {
+            region = this.region;
+            if (true || this.region.hasChunk(x, z)) {
+              try {
+                chunk = region.getChunk(x, z);
+                if (chunk != null) {
+                  _results2.push(this.loadChunk(chunk, x, z));
+                } else {
+                  _results2.push(console.log('chunk at ' + x + ',' + z + ' is undefined'));
+                }
+              } catch (e) {
+                console.log(e.message);
+                _results2.push(console.log(e.stack));
               }
-            } catch (e) {
-              console.log(e.message);
-              console.log(e.stack);
+            } else {
+              _results2.push(void 0);
             }
           }
-        }
+          return _results2;
+        }).call(this));
       }
-      total = new Date().getTime() - start;
-      seconds = total / 1000.0;
-      return console.log("loaded in " + seconds + " seconds");
+      return _results;
     };
 
     RegionRenderer.prototype.showProgress = function(ratio) {

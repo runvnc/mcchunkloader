@@ -1,5 +1,5 @@
 (function() {
-  var binaryhttp, chunkdata, data, done, exports, nbt, onProgress, region, render, require, whichChunks;
+  var binaryhttp, chunkdata, data, delay, done, exports, nbt, onProgress, region, render, require, whichChunks;
 
   if (typeof window !== "undefined" && window !== null) {
     exports = window.exports;
@@ -24,16 +24,28 @@
     return chunks = {};
   };
 
-  onProgress = function(evt) {};
+  onProgress = function(evt) {
+    return $('#proginner').width($('#progouter').width() * (evt.position / evt.total));
+  };
+
+  delay = function(ms, func) {
+    return setTimeout(func, ms);
+  };
 
   done = function(arraybuffer) {
-    var renderer, testregion;
-    data = arraybuffer;
-    console.log(arraybuffer);
-    testregion = new region.Region(data);
-    console.log(testregion);
-    whichChunks(testregion);
-    return renderer = new render.RegionRenderer(testregion);
+    return delay(150, function() {
+      var renderer, seconds, start, testregion, total;
+      start = new Date().getTime();
+      data = arraybuffer;
+      console.log(arraybuffer);
+      testregion = new region.Region(data);
+      console.log(testregion);
+      whichChunks(testregion);
+      renderer = new render.RegionRenderer(testregion);
+      total = new Date().getTime() - start;
+      seconds = total / 1000.0;
+      return console.log("loaded in " + seconds + " seconds");
+    });
   };
 
   exports.runTests = function() {

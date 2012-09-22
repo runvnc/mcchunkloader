@@ -40,11 +40,16 @@ class ChunkView
 
   
   getBlockAt: (x, y, z) =>
-    if not @nbt.root.Level.Sections? then return -1
+    if @nbt.root.Level.Sections?
+      sections = @nbt.root.Level.Sections
+    else
+      sections = @nbt.root.Sections
+    if not sections then return -1
+
     sectionnum = Math.floor( (y / 16) )
     offset = ((y%16)*256) + (z * 16) + x
     blockpos = offset
-    for section in @nbt.root.Level.Sections
+    for section in sections
       if section isnt undefined and section.Y * 1 is sectionnum * 1   
         return section.Blocks[blockpos]
     @nomatch[y] = true    
@@ -63,6 +68,7 @@ class ChunkView
 
     return false
 
+
   extractChunk: =>
     @vertices = []
     @colors = []
@@ -70,56 +76,50 @@ class ChunkView
     @textcoords = []
     @filled = []
     @cubeCount = 0
-
-    for x in [0..ChunkSizeX-1]
-      for z in [0..ChunkSizeZ-1]
-        for y in [@ymin..255]
-          id = @getBlockAt x, y, z
-          blockType = blockInfo['_'+id]
-          if id is 20 then console.log 'foundglass'
-          if not blockType?
-            if not (id in @unknown) then @unknown.push id 
-            id = -1            
-          if not blockType?.t?
-            if not (id in @notexture) then @notexture.push id
-            id = -1
-            
-          show = false
-          show = (id > 0)
-          
-          if not @superflat and y<60 and @showStuff is 'diamondsmoss'
-            show = ( id is 48 or id is 56 or id is 4 or id is 52 )
-          else
-            if id isnt 0 and id isnt -1 and id isnt -10
-              show = @transNeighbors x, y, z
-            else
+    if @nbt.root.Level.Sections?
+      sections = @nbt.root.Level.Sections
+    else
+      sections = @nbt.root.Sections
+    if not sections then return    
+    for section in sections
+      if section isnt undefined #and (section.Y*1)*16 >= @ymin           
+        Y = section.Y * 1
+        for y in [Y*16..Y*16+15]
+          for x in [0..ChunkSizeX-1]
+            for z in [0..ChunkSizeZ-1]
+              if y < @ymin then continue     
+              offset = ((y%16)*256) + (z * 16) + x
+              id = section.Blocks[offset]               
+              #id = @getBlockAt x, y, z
+              blockType = blockInfo['_'+id]             
+              if not blockType?
+                #if not (id in @unknown) then @unknown.push id 
+                id = -1            
+              if not blockType?.t?
+                #if not (id in @notexture) then @notexture.push id
+                id = -1
+               
               show = false
-          
-          if show
-            @addBlock [x,y,z]
-          else
-            blah = 1
+              show = (id > 0)
+              
+              if not @superflat and y<60 and @showStuff is 'diamondsmoss'
+                show = ( id is 48 or id is 56 or id is 4 or id is 52 )
+              else
+                if id isnt 0 and id isnt -1 and id isnt -10
+                  show = @transNeighbors x, y, z
+                else
+                  show = false
+              
+              if show
+                @addBlock [x,y,z]
+              else
+                blah = 1
            
     @renderPoints()
 
   addBlock: (position) =>
     verts = [position[0], position[1], position[2]]
     @filled.push verts
-
-  ###
-  calcPoint: (pos) =>
-    verts = []
-    if @rotcent
-      xmod = 15 * ChunkSizeX
-      zmod = 15 * ChunkSizeZ
-    else
-      xmod = (@sminx + (@smaxx - @sminx) / 2.0) * ChunkSizeX
-      zmod = (@sminz + (@smaxz - @sminz) / 2.0) * ChunkSizeZ
-    verts.push ((-1 * xmod) + pos[0] + (@pos.x) * ChunkSizeX * 1.00000) 
-    verts.push ((pos[1] + 1) * 1.0) 
-    verts.push ((-1 * zmod) + pos[2] + (@pos.z) * ChunkSizeZ * 1.00000)
-    verts
-  ###
 
   renderPoints: =>
     i = 0
@@ -155,11 +155,11 @@ class ChunkView
     return false
     n = [p[0] + offset0, p[1] + offset1, p[2] + offset2]
     info = @getBlockType(n[0], n[1], n[2])
-    #(info.id > 0 and info?.t?) or (info?.t? is 8 or info?.t? is 9)
-    if info?.id? is 8 or info?.id? is 9
-      return true
-    else
-      return false
+    return (info.id > 0 and info?.t?) or (info?.t? is 8 or info?.t? is 9)
+    #if info?.id? is 8 or info?.id? is 9
+    #  return true
+    #else
+    #  return false
 
   addTexturedBlock: (p) =>
     a = p

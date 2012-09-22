@@ -1,65 +1,120 @@
-<!DOCTYPE html>
 <html>
-    <head>
-        <title>MC Chunk Loader 2.0</title>
-        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-        <style>
-         body {
-           background-color: #6D839C;
-           margin: 0px;
-           overflow: hidden;
-           font-family:Monospace;
-           font-size:13px;
-           text-align:center;
-           font-weight: bold;
-           text-align:center;
-         }
+<head><title>Minecraft Map Viewer and Dungeon Finder</title>
+<link href='http://fonts.googleapis.com/css?family=Ubuntu|Play' rel='stylesheet' type='text/css'>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script>
+<style>
+body, p, div {
+  background-color: #6D839C;
+  font-family: 'Ubuntu', sans-serif;
+  color: #fff;
+  font-size: 14pt;
+  text-shadow:2px 2px 2px #0F1517;
+}
 
-        a {
-          color:#0078ff;
-        }
+body {
+  margin-left: auto;
+  margin-right: auto;
+  position: relative;
+  width: 95%;
+}
 
-        #info {
-          color: #fff;
-          position: absolute;
-          top: 0px; width: 100%;
-          padding: 5px;
-          z-index: 100;
-        }
-        #proginner {
-          position: absolute;
-          left: 40%;
-          width: 0px;
-          height: 25px;
-          background-color: #fff;
-        }
-        #progouter {
-          position: absolute;
-          left: 40%;
-          height:25px;
-          width: 300px;
-          border: 1px solid #fff;
-        }
-    </style>
+h1 {
+  font-family: 'Play', sans-serif;
+  margin-top: 0px;
+  padding-top: 0px;
+}
 
-    </head>
-    <body>
-      <div id="progouter"></div><div id="proginner"></div>
+.container, p.container, p {
+  background-color: #212E33;
+  border-radius: 15px;
+}
+.container {
+  position: relative;
+  padding: 25px;
+  width: 95%;
+}
 
-      <script src="scripts/jquery.min.js"></script>
-      <script src="scripts/modules.js"></script>
-      <script src="scripts/binaryhttp.js"></script>
-      <script src="scripts/jdataview.js"></script>
-      <script src="scripts/inflate.min.js"></script>
-      <script src="scripts/nbt.js"></script>
-      <script src="scripts/chunk.js"></script>
-      <script src="scripts/region.js"></script>
-      <script src="scripts/three.min.js"></script>
-      <script src="scripts/Stats.js"></script>
-      <script src="scripts/blockinfo.js"></script>
-      <script src="scripts/chunkview.js"></script>
-      <script src="scripts/renderer.js"></script>
-      <script src="scripts/tests.js"></script>
-     <script src="scripts/main.js"></script>
-    </body>
+</style>
+<script>
+function calcName() {
+  var regionx = Math.floor($('#x').val()*1 / 512);
+  var regionz = Math.floor($('#z').val()*1 / 512);
+  $('#fname').html('r.'+regionx.toString()+'.'+regionz.toString()+'.mca');
+}
+
+function open_in_new_tab(url ) {
+  window.open(url, '_blank');
+  window.focus();
+}
+
+$(document).ready(function() {
+  $('#x,#z').change(function() {
+    calcName();
+  });
+
+  $('#view').click(function() {
+    open_in_new_tab(encodeURI('viewer.html?url='+$('#url').val()+"&x="+$('#x').val()+"&y="+$('#y').val()+"&z="+$('#z').val()));
+  });
+
+  calcName();
+})
+
+</script>
+</head>
+<body>
+<div class="container">
+<h1>Minecraft Map Viewer and Dungeon Finder</h1>
+
+</script><p>This is an online 3D Minecraft map viewer and dungeon finder that requires WebGL (new Firefox/Chrome). </p>
+<p>(Google translate of description in case Baidu will pick it up) minecraft地图浏览器地牢发现者 (minecraft dì tú liú lǎn qì dì láo fā xiàn zhě)</p>
+
+<script type="text/javascript"><!--
+
+google_ad_client = "ca-pub-1605512859966157";
+
+/* tmc1 */
+
+google_ad_slot = "7749536034";
+
+google_ad_width = 728;
+
+google_ad_height = 90;
+
+//-->
+
+</script>
+
+<script type="text/javascript" src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+</script>
+
+<h2>Step 1:&nbsp;&nbsp; Determine Minecraft coordinates</h2>
+<p>To determine Minecraft coordinates, hit F3 in Minecraft. Enter x and z coordinates rounded to whole numbers below. Filename will update automatically.</p>
+
+<p>x: &nbsp;<input id="x" name="x" size="3" type="number" value="0" />
+y: &nbsp;<input id="y" name="y" size="3" type="number" value="63">
+z: &nbsp;
+<input id="z" name="x" size="3" type="number" value="0" /></p>
+
+<h2>Step 2: &nbsp;&nbsp; Upload .mca File
+<p>You will need to locate your .mca file inside of the .minecraft/saves/[worldname]/region folder. Based on the coordinates you entered, the filename should be <span id="fname"></span>.</p>
+<p>Once you have determined the correct file, upload it to a web server or file hosting site that supports direct downloads and cross-origin resource sharing (http://enable-cors.org/) (for example, DropBox).<br/><br/> Enter the URL below:</p>
+
+<input type="text" id="url" size="80"/>
+
+<h2>Step 3: &nbsp;&nbsp; Launch Viewer</h2>
+<button id="view">View</button>
+</div>
+
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-25678702-1']);
+  _gaq.push(['_trackPageview']);
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+</script>
+
+</body>
 </html>

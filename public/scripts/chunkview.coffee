@@ -19,8 +19,6 @@ calcPoint = (pos, opts) =>
 
 class ChunkView
   constructor: (@options, @indices, @vertices) -> 
-    #if not @indices?
-    #  new Int16Array(triangles*3)    
     @nbt = options.nbt
     @pos = options.pos
     @torches = []
@@ -30,14 +28,9 @@ class ChunkView
     @filled = []
     @nomatch = {}
     @ymin = 60
-    @superflat = false
-    @showStuff = 'diamondsmoss'
+    if @options.superflat then @superflat = @options.superflat else @superflat = false
+    if @options.showstuff then @showStuff = @options.showstuff else @showStuff = 'diamondsmoss'    
     if options.ymin? then @ymin = options.ymin
-    #if options.sminx? then @sminx = options.sminx else @sminx = 15
-    #@sminz = options.sminz
-    #@smaxx = options.smaxx
-    #@smaxz = options.smaxz
-
   
   getBlockAt: (x, y, z) =>
     if @nbt.root.Level.Sections?

@@ -5,7 +5,8 @@ if window?
 SCALE = 5
 
 chunks = require 'chunk'
-ChunkView = require('chunkview').ChunkView
+chunkview = require('chunkview')
+ChunkView = chunkview.ChunkView
 blockInfo = require('blockinfo').blockInfo
 
 delay = (ms, func) ->
@@ -24,44 +25,38 @@ class RegionRenderer
     @animate()
     @load()
 
-  #I need to put the camera at a certain x,y,z
-  #so I need to calculate which chunk it is in
-  #and what block within that chunk
-  #then I need to 
-  #use the equation from calcPoint
-  #to get the position and add it to the
-  #mesh position
-  #which chunk x z is it?
-  #32x32 chunks
+  addTorches: (view) =>
+    for coords in view.torches
+      pointLight = new THREE.PointLight(0xFFFFAA, 1.0, 15)
+      pointLight.position.set coords[0],coords[1],coords[2]
+      @scene.add pointLight
+
   mcCoordsToWorld: (x, y, z) =>
-    chunkX = x % 32
-    chunkZ = z % 32
     posX = x % (32 * 16)
-    posZ = x % (32 * 16)
-    posY = y
-    xmod = 0 #15 * 16
-    zmod = 0 #15 * 16
-    ret = new THREE.Vector3()
-    ret.x = ((-1 * xmod) + posX + (chunkX) * 16 * 1.00000) 
-    ret.y = ((posY + 1) * 1.0) 
-    ret.z = ((-1 * zmod) + posZ + (chunkZ) * 16 * 1.00000) 
-    ret.x += 700
-    ret.z += 700
-    return ret
+    posZ = z % (32 * 16)
+    chunkX = Math.floor(posX / 16)
+    chunkZ = Math.floor(posZ / 16)
+    posX -= chunkX * 16
+    posZ -= chunkZ * 16
+    
+    verts = chunkview.calcPoint [posX, y, posZ], { chunkX, chunkZ }
+    ret =
+      x: verts[0]
+      y: verts[1]
+      z: verts[2]
+      chunkX: chunkX
+      chunkZ: chunkZ
+    ret
 
   loadChunk: (chunk, chunkX, chunkZ) =>
     options =
       nbt: chunk
-      pos:
-        x: chunkX
-        z: chunkZ
+      chunkX: chunkX
+      chunkZ: chunkZ
     view = new ChunkView(options)    
     view.extractChunk()
-    console.log 'unknown:'
-    console.log view.unknown
-    console.log 'no texture:'
-    console.log view.notexture
-    triangles = view.indices.length / 3
+ 
+    @addTorches view
     vertexIndexArray = new Uint16Array(view.indices.length)
     for i in [0...view.indices.length]
       vertexIndexArray[i] = view.indices[i]
@@ -103,12 +98,12 @@ class RegionRenderer
 
     material = @loadTexture('/terrain.png')
     mesh = new THREE.Mesh(geometry, material)
-    mesh.position.x = 700.0
-    mesh.position.y = 0.0
-    mesh.position.z = 700.0
     mesh.doubleSided = false
     @scene.add mesh
-
+    #@camera.position.x = view.vertices[0]
+    #@camera.position.y = view.vertices[1]
+    #@camera.position.z = view.vertices[2]
+    
     centerX = mesh.position.x + 0.5 * ( geometry.boundingBox.max.x - geometry.boundingBox.min.x )
     centerY = mesh.position.y + 0.5 * ( geometry.boundingBox.max.y - geometry.boundingBox.min.y )
     centerZ = mesh.position.z + 0.5 * ( geometry.boundingBox.max.z - geometry.boundingBox.min.z )
@@ -124,17 +119,23 @@ class RegionRenderer
     @textures[path] = new THREE.MeshLambertMaterial( { map: texture, transparent: true } )
     return @textures[path]
 
+
   load: =>
-    camPos = @mcCoordsToWorld(0,70,0)
-    console.log 'camPos'
-    console.log camPos
+    startX = 163
+    startZ = 197 
+    camPos = @mcCoordsToWorld(startX,70,startZ)
+    size = 6
+    minx = Math.max camPos.chunkX - (size/2), 0
+    minz = Math.max camPos.chunkZ - (size/2), 0
+    maxx = Math.min camPos.chunkX + (size/2), 31
+    maxz = Math.min camPos.chunkZ + (size/2), 31
     @camera.position.x = camPos.x
     @camera.position.y = camPos.y
     @camera.position.z = camPos.z
-    
+
     start = new Date().getTime()
-    for x in [0..5]
-      for z in [0..5]
+    for x in [minx..maxx]
+      for z in [minz..maxz]
         region = @region
         if true or @region.hasChunk x,z
           try
@@ -158,21 +159,22 @@ class RegionRenderer
 
     @clock = new THREE.Clock()
 
-    @camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 2300 )
-    @camera.position.z = 50
-    @camera.position.y = 25
+    #@camera = new THREE.OrthographicCamera(-1000, 1000, -1000, 1000, -1000, 1000)
+    @camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 1500 )
+   
+    #@camera.position.z = 50
+    #@camera.position.y = 25
     
     @scene = new THREE.Scene()
 
-    @scene.add new THREE.AmbientLight(0x444444)
-    directionalLight = new THREE.DirectionalLight( 0xcccccc )
-    directionalLight.position.set( 9, 30, 300 )
- 
-    @scene.add directionalLight
+    @scene.add new THREE.AmbientLight(0x333333)
+    pointLight = new THREE.PointLight(0x332222)
+    pointLight.position.set( 400, 100, 600 ) 
+    @scene.add pointLight
 
-    @pointLight = new THREE.PointLight(0xddcccc, 1, 1500)
-    @pointLight.position.set(0,250,0)
-    @scene.add @pointLight
+    #@pointLight = new THREE.PointLight(0xddcccc, 1, 1500)
+    #@pointLight.position.set(0,250,0)
+    #@scene.add @pointLight
 
     @renderer = new THREE.WebGLRenderer({  antialias	: true })
  

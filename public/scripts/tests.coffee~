@@ -25,5 +25,5 @@ done = (arraybuffer) ->
   renderer = new render.RegionRenderer(testregion)
 
 exports.runTests = ->
-  binaryhttp.loadBinary '/r.-2.-1.mca', onProgress, done
+  binaryhttp.loadBinary '/r.0.0.mca', onProgress, done
    

@@ -10,18 +10,26 @@ ChunkSizeX = 16
 
 cubeCount = 0
 
+calcPoint = (pos, opts) =>
+  verts = []
+  verts.push pos[0] + opts.chunkX * 16 * 1.00000
+  verts.push (pos[1] + 1) * 1.0
+  verts.push pos[2] + opts.chunkZ * 16 * 1.00000
+  verts
+
 class ChunkView
-  constructor: (options, @indices, @vertices) -> 
+  constructor: (@options, @indices, @vertices) -> 
     #if not @indices?
-    #  new Int16Array(triangles*3)
+    #  new Int16Array(triangles*3)    
     @nbt = options.nbt
     @pos = options.pos
+    @torches = []
     @unknown = []
     @notexture = []
     @rotcent = true
     @filled = []
     @nomatch = {}
-    @ymin = 55
+    @ymin = 60
     @superflat = false
     @showStuff = 'diamondsmoss'
     if options.ymin? then @ymin = options.ymin
@@ -36,10 +44,8 @@ class ChunkView
     sectionnum = Math.floor( (y / 16) )
     offset = ((y%16)*256) + (z * 16) + x
     blockpos = offset
-
     for section in @nbt.root.Level.Sections
-      if section isnt undefined and section.Y * 1 is sectionnum * 1
-          
+      if section isnt undefined and section.Y * 1 is sectionnum * 1   
         return section.Blocks[blockpos]
     @nomatch[y] = true    
     return -1
@@ -100,6 +106,7 @@ class ChunkView
     verts = [position[0], position[1], position[2]]
     @filled.push verts
 
+  ###
   calcPoint: (pos) =>
     verts = []
     if @rotcent
@@ -112,6 +119,7 @@ class ChunkView
     verts.push ((pos[1] + 1) * 1.0) 
     verts.push ((-1 * zmod) + pos[2] + (@pos.z) * ChunkSizeZ * 1.00000)
     verts
+  ###
 
   renderPoints: =>
     i = 0
@@ -156,62 +164,51 @@ class ChunkView
   addTexturedBlock: (p) =>
     a = p
     block = @getBlockInfo(p)
-    
-    #front face
-    @addCubePoint a, -1.0, -1.0, 1.0
-    @addCubePoint a, 1.0, -1.0, 1.0
-    @addCubePoint a, 1.0, 1.0, 1.0
-    @addCubePoint a, -1.0, 1.0, 1.0
-    
-    #back face
-    @addCubePoint a, 1.0, -1.0, -1.0
-    @addCubePoint a, -1.0, -1.0, -1.0
-    @addCubePoint a, -1.0, 1.0, -1.0
-    @addCubePoint a, 1.0, 1.0, -1.0
-    
-    #top face
-    @addCubePoint a, -1.0, 1.0, -1.0
-    @addCubePoint a, -1.0, 1.0, 1.0
-    @addCubePoint a, 1.0, 1.0, 1.0
-    @addCubePoint a, 1.0, 1.0, -1.0
-    
-    #bottom face
-    @addCubePoint a, -1.0, -1.0, -1.0
-    @addCubePoint a, 1.0, -1.0, -1.0
-    @addCubePoint a, 1.0, -1.0, 1.0
-    @addCubePoint a, -1.0, -1.0, 1.0
-
+    if block.id is 50
+      @torches.push calcPoint(p, this.options)
+    else
+      #front face
+      @addCubePoint a, -1.0, -1.0, 1.0
+      @addCubePoint a, 1.0, -1.0, 1.0
+      @addCubePoint a, 1.0, 1.0, 1.0
+      @addCubePoint a, -1.0, 1.0, 1.0
       
-    #4_ _3
-    #  |
-    #  x
-    #  |
-    #1_ _2
+      #back face
+      @addCubePoint a, 1.0, -1.0, -1.0
+      @addCubePoint a, -1.0, -1.0, -1.0
+      @addCubePoint a, -1.0, 1.0, -1.0
+      @addCubePoint a, 1.0, 1.0, -1.0
+      
+      #top face
+      @addCubePoint a, -1.0, 1.0, -1.0
+      @addCubePoint a, -1.0, 1.0, 1.0
+      @addCubePoint a, 1.0, 1.0, 1.0
+      @addCubePoint a, 1.0, 1.0, -1.0
+      
+      #bottom face
+      @addCubePoint a, -1.0, -1.0, -1.0
+      @addCubePoint a, 1.0, -1.0, -1.0
+      @addCubePoint a, 1.0, -1.0, 1.0
+      @addCubePoint a, -1.0, -1.0, 1.0
 
-
-    #3    2
-
-    #4   1
-
-    #right face
-    @addCubePoint a, 1.0, -1.0, 1.0
-    @addCubePoint a, 1.0, -1.0, -1.0     
-    @addCubePoint a, 1.0, 1.0, -1.0     
-    @addCubePoint a, 1.0, 1.0, 1.0
-    
-    
-    #left face
-    @addCubePoint a, -1.0, 1.0, -1.0
-    @addCubePoint a, -1.0, -1.0, -1.0
-    @addCubePoint a, -1.0, -1.0, 1.0
-    @addCubePoint a, -1.0, 1.0, 1.0
-    @addFaces @cubeCount * 24, block, p #24
-    @cubeCount++
+      #right face
+      @addCubePoint a, 1.0, -1.0, 1.0
+      @addCubePoint a, 1.0, -1.0, -1.0     
+      @addCubePoint a, 1.0, 1.0, -1.0     
+      @addCubePoint a, 1.0, 1.0, 1.0
+      
+      #left face    
+      @addCubePoint a, -1.0, -1.0, -1.0
+      @addCubePoint a, -1.0, -1.0, 1.0
+      @addCubePoint a, -1.0, 1.0, 1.0
+      @addCubePoint a, -1.0, 1.0, -1.0
+      @addFaces @cubeCount * 24, block, p #24
+      @cubeCount++
 
   addCubePoint: (a, xdelta, ydelta, zdelta) =>
-    s = xdelta * 0.001
+    s = 0.0000000 #xdelta * 0.001
     p2 = [a[0] + xdelta * 0.5 + s, a[1] + ydelta * 0.5 + s, a[2] + zdelta * 0.5 + s]
-    p3 = @calcPoint(p2)
+    p3 = calcPoint(p2, this.options)
     
     @vertices.push p3[0]
     @vertices.push p3[1]
@@ -328,4 +325,5 @@ class ChunkView
 
   
 exports.ChunkView = ChunkView
+exports.calcPoint = calcPoint
 

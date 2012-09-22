@@ -1,5 +1,5 @@
 (function() {
-  var ChunkView, RegionRenderer, SCALE, blockInfo, chunks, delay, exports, require,
+  var ChunkView, RegionRenderer, SCALE, blockInfo, chunks, chunkview, delay, exports, require,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   if (typeof window !== "undefined" && window !== null) {
@@ -11,7 +11,9 @@
 
   chunks = require('chunk');
 
-  ChunkView = require('chunkview').ChunkView;
+  chunkview = require('chunkview');
+
+  ChunkView = chunkview.ChunkView;
 
   blockInfo = require('blockinfo').blockInfo;
 
@@ -32,6 +34,7 @@
       this.loadTexture = __bind(this.loadTexture, this);
       this.loadChunk = __bind(this.loadChunk, this);
       this.mcCoordsToWorld = __bind(this.mcCoordsToWorld, this);
+      this.addTorches = __bind(this.addTorches, this);
       this.mouseX = 0;
       this.mouseY = 0;
       this.textures = {};
@@ -42,40 +45,55 @@
       this.load();
     }
 
+    RegionRenderer.prototype.addTorches = function(view) {
+      var coords, pointLight, _i, _len, _ref, _results;
+      console.log('torches: ');
+      console.log(view.torches);
+      _ref = view.torches;
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        coords = _ref[_i];
+        pointLight = new THREE.PointLight(0xFFFFAA, 1.0, 15);
+        pointLight.position.set(coords[0], coords[1], coords[2]);
+        _results.push(this.scene.add(pointLight));
+      }
+      return _results;
+    };
+
     RegionRenderer.prototype.mcCoordsToWorld = function(x, y, z) {
-      var chunkX, chunkZ, posX, posY, posZ, ret, xmod, zmod;
-      chunkX = x % 32;
-      chunkZ = z % 32;
+      var chunkX, chunkZ, posX, posZ, ret, verts;
       posX = x % (32 * 16);
-      posZ = x % (32 * 16);
-      posY = y;
-      xmod = 0;
-      zmod = 0;
-      ret = new THREE.Vector3();
-      ret.x = (-1 * xmod) + posX + chunkX * 16 * 1.00000;
-      ret.y = (posY + 1) * 1.0;
-      ret.z = (-1 * zmod) + posZ + chunkZ * 16 * 1.00000;
-      ret.x += 700;
-      ret.z += 700;
+      posZ = z % (32 * 16);
+      chunkX = Math.floor(posX / 16);
+      chunkZ = Math.floor(posZ / 16);
+      posX -= chunkX * 16;
+      posZ -= chunkZ * 16;
+      console.log("Inside of mcCoordsToWorld chunkX is " + chunkX + " and chunkZ is " + chunkZ);
+      verts = chunkview.calcPoint([posX, y, posZ], {
+        chunkX: chunkX,
+        chunkZ: chunkZ
+      });
+      ret = {
+        x: verts[0],
+        y: verts[1],
+        z: verts[2],
+        chunkX: chunkX,
+        chunkZ: chunkZ
+      };
       return ret;
     };
 
     RegionRenderer.prototype.loadChunk = function(chunk, chunkX, chunkZ) {
-      var attributes, centerX, centerY, centerZ, geometry, i, material, mesh, options, triangles, uvArray, vertexIndexArray, vertexPositionArray, view, _ref, _ref2, _ref3;
+      var attributes, centerX, centerY, centerZ, geometry, i, material, mesh, options, uvArray, vertexIndexArray, vertexPositionArray, view, _ref, _ref2, _ref3;
       options = {
         nbt: chunk,
-        pos: {
-          x: chunkX,
-          z: chunkZ
-        }
+        chunkX: chunkX,
+        chunkZ: chunkZ
       };
       view = new ChunkView(options);
       view.extractChunk();
-      console.log('unknown:');
-      console.log(view.unknown);
-      console.log('no texture:');
-      console.log(view.notexture);
-      triangles = view.indices.length / 3;
+      console.log(view);
+      this.addTorches(view);
       vertexIndexArray = new Uint16Array(view.indices.length);
       for (i = 0, _ref = view.indices.length; 0 <= _ref ? i < _ref : i > _ref; 0 <= _ref ? i++ : i--) {
         vertexIndexArray[i] = view.indices[i];
@@ -119,11 +137,9 @@
       geometry.computeVertexNormals();
       material = this.loadTexture('/terrain.png');
       mesh = new THREE.Mesh(geometry, material);
-      mesh.position.x = 700.0;
-      mesh.position.y = 0.0;
-      mesh.position.z = 700.0;
       mesh.doubleSided = false;
       this.scene.add(mesh);
+      console.log("ok position is " + view.vertices[0] + "," + view.vertices[1] + "," + view.vertices[2]);
       centerX = mesh.position.x + 0.5 * (geometry.boundingBox.max.x - geometry.boundingBox.min.x);
       centerY = mesh.position.y + 0.5 * (geometry.boundingBox.max.y - geometry.boundingBox.min.y);
       centerZ = mesh.position.z + 0.5 * (geometry.boundingBox.max.z - geometry.boundingBox.min.z);
@@ -148,21 +164,33 @@
     };
 
     RegionRenderer.prototype.load = function() {
-      var camPos, chunk, region, seconds, start, total, x, z;
-      camPos = this.mcCoordsToWorld(0, 70, 0);
-      console.log('camPos');
-      console.log(camPos);
+      var camPos, chunk, maxx, maxz, minx, minz, region, seconds, size, start, startX, startZ, total, x, z;
+      startX = 163;
+      startZ = 197;
+      camPos = this.mcCoordsToWorld(startX, 70, startZ);
+      size = 6;
+      minx = Math.max(camPos.chunkX - (size / 2), 0);
+      minz = Math.max(camPos.chunkZ - (size / 2), 0);
+      maxx = Math.min(camPos.chunkX + (size / 2), 31);
+      maxz = Math.min(camPos.chunkZ + (size / 2), 31);
       this.camera.position.x = camPos.x;
       this.camera.position.y = camPos.y;
       this.camera.position.z = camPos.z;
+      console.log('camPos is ' + camPos.x + ', ' + camPos.y + ', ' + camPos.z);
+      console.log('minx is ' + minx);
+      console.log('minz is ' + minz);
       start = new Date().getTime();
-      for (x = 0; x <= 5; x++) {
-        for (z = 0; z <= 5; z++) {
+      for (x = minx; minx <= maxx ? x <= maxx : x >= maxx; minx <= maxx ? x++ : x--) {
+        for (z = minz; minz <= maxz ? z <= maxz : z >= maxz; minz <= maxz ? z++ : z--) {
           region = this.region;
           if (true || this.region.hasChunk(x, z)) {
             try {
               chunk = region.getChunk(x, z);
-              if (chunk != null) this.loadChunk(chunk, x, z);
+              if (chunk != null) {
+                console.log('loading chunk at ' + x + ', ' + z);
+                console.log(chunk);
+                this.loadChunk(chunk, x, z);
+              }
             } catch (e) {
               console.log(e.message);
               console.log(e.stack);
@@ -180,21 +208,16 @@
     };
 
     RegionRenderer.prototype.init = function() {
-      var container, directionalLight;
+      var container, pointLight;
       container = document.createElement('div');
       document.body.appendChild(container);
       this.clock = new THREE.Clock();
-      this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2300);
-      this.camera.position.z = 50;
-      this.camera.position.y = 25;
+      this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1500);
       this.scene = new THREE.Scene();
-      this.scene.add(new THREE.AmbientLight(0x444444));
-      directionalLight = new THREE.DirectionalLight(0xcccccc);
-      directionalLight.position.set(9, 30, 300);
-      this.scene.add(directionalLight);
-      this.pointLight = new THREE.PointLight(0xddcccc, 1, 1500);
-      this.pointLight.position.set(0, 250, 0);
-      this.scene.add(this.pointLight);
+      this.scene.add(new THREE.AmbientLight(0x333333));
+      pointLight = new THREE.PointLight(0x332222);
+      pointLight.position.set(400, 100, 600);
+      this.scene.add(pointLight);
       this.renderer = new THREE.WebGLRenderer({
         antialias: true
       });

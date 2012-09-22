@@ -1,5 +1,6 @@
 (function() {
-  var ChunkSizeX, ChunkSizeY, ChunkSizeZ, ChunkView, blockInfo, cubeCount, exports, require,
+  var ChunkSizeX, ChunkSizeY, ChunkSizeZ, ChunkView, blockInfo, calcPoint, cubeCount, exports, require,
+    _this = this,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __indexOf = Array.prototype.indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
@@ -18,9 +19,19 @@
 
   cubeCount = 0;
 
+  calcPoint = function(pos, opts) {
+    var verts;
+    verts = [];
+    verts.push(pos[0] + opts.chunkX * 16 * 1.00000);
+    verts.push((pos[1] + 1) * 1.0);
+    verts.push(pos[2] + opts.chunkZ * 16 * 1.00000);
+    return verts;
+  };
+
   ChunkView = (function() {
 
     function ChunkView(options, indices, vertices) {
+      this.options = options;
       this.indices = indices;
       this.vertices = vertices;
       this.addFaces = __bind(this.addFaces, this);
@@ -32,19 +43,19 @@
       this.getBlockInfo = __bind(this.getBlockInfo, this);
       this.getBlockType = __bind(this.getBlockType, this);
       this.renderPoints = __bind(this.renderPoints, this);
-      this.calcPoint = __bind(this.calcPoint, this);
       this.addBlock = __bind(this.addBlock, this);
       this.extractChunk = __bind(this.extractChunk, this);
       this.transNeighbors = __bind(this.transNeighbors, this);
       this.getBlockAt = __bind(this.getBlockAt, this);
       this.nbt = options.nbt;
       this.pos = options.pos;
+      this.torches = [];
       this.unknown = [];
       this.notexture = [];
       this.rotcent = true;
       this.filled = [];
       this.nomatch = {};
-      this.ymin = 55;
+      this.ymin = 60;
       this.superflat = false;
       this.showStuff = 'diamondsmoss';
       if (options.ymin != null) this.ymin = options.ymin;
@@ -136,21 +147,20 @@
       return this.filled.push(verts);
     };
 
-    ChunkView.prototype.calcPoint = function(pos) {
-      var verts, xmod, zmod;
-      verts = [];
-      if (this.rotcent) {
-        xmod = 15 * ChunkSizeX;
-        zmod = 15 * ChunkSizeZ;
-      } else {
-        xmod = (this.sminx + (this.smaxx - this.sminx) / 2.0) * ChunkSizeX;
-        zmod = (this.sminz + (this.smaxz - this.sminz) / 2.0) * ChunkSizeZ;
-      }
-      verts.push((-1 * xmod) + pos[0] + this.pos.x * ChunkSizeX * 1.00000);
-      verts.push((pos[1] + 1) * 1.0);
-      verts.push((-1 * zmod) + pos[2] + this.pos.z * ChunkSizeZ * 1.00000);
-      return verts;
-    };
+    /*
+      calcPoint: (pos) =>
+        verts = []
+        if @rotcent
+          xmod = 15 * ChunkSizeX
+          zmod = 15 * ChunkSizeZ
+        else
+          xmod = (@sminx + (@smaxx - @sminx) / 2.0) * ChunkSizeX
+          zmod = (@sminz + (@smaxz - @sminz) / 2.0) * ChunkSizeZ
+        verts.push ((-1 * xmod) + pos[0] + (@pos.x) * ChunkSizeX * 1.00000) 
+        verts.push ((pos[1] + 1) * 1.0) 
+        verts.push ((-1 * zmod) + pos[2] + (@pos.z) * ChunkSizeZ * 1.00000)
+        verts
+    */
 
     ChunkView.prototype.renderPoints = function() {
       var i, verts, _results;
@@ -209,39 +219,43 @@
       var a, block;
       a = p;
       block = this.getBlockInfo(p);
-      this.addCubePoint(a, -1.0, -1.0, 1.0);
-      this.addCubePoint(a, 1.0, -1.0, 1.0);
-      this.addCubePoint(a, 1.0, 1.0, 1.0);
-      this.addCubePoint(a, -1.0, 1.0, 1.0);
-      this.addCubePoint(a, 1.0, -1.0, -1.0);
-      this.addCubePoint(a, -1.0, -1.0, -1.0);
-      this.addCubePoint(a, -1.0, 1.0, -1.0);
-      this.addCubePoint(a, 1.0, 1.0, -1.0);
-      this.addCubePoint(a, -1.0, 1.0, -1.0);
-      this.addCubePoint(a, -1.0, 1.0, 1.0);
-      this.addCubePoint(a, 1.0, 1.0, 1.0);
-      this.addCubePoint(a, 1.0, 1.0, -1.0);
-      this.addCubePoint(a, -1.0, -1.0, -1.0);
-      this.addCubePoint(a, 1.0, -1.0, -1.0);
-      this.addCubePoint(a, 1.0, -1.0, 1.0);
-      this.addCubePoint(a, -1.0, -1.0, 1.0);
-      this.addCubePoint(a, 1.0, -1.0, 1.0);
-      this.addCubePoint(a, 1.0, -1.0, -1.0);
-      this.addCubePoint(a, 1.0, 1.0, -1.0);
-      this.addCubePoint(a, 1.0, 1.0, 1.0);
-      this.addCubePoint(a, -1.0, -1.0, -1.0);
-      this.addCubePoint(a, -1.0, -1.0, 1.0);
-      this.addCubePoint(a, -1.0, 1.0, 1.0);
-      this.addCubePoint(a, -1.0, 1.0, -1.0);
-      this.addFaces(this.cubeCount * 24, block, p);
-      return this.cubeCount++;
+      if (block.id === 50) {
+        return this.torches.push(calcPoint(p, this.options));
+      } else {
+        this.addCubePoint(a, -1.0, -1.0, 1.0);
+        this.addCubePoint(a, 1.0, -1.0, 1.0);
+        this.addCubePoint(a, 1.0, 1.0, 1.0);
+        this.addCubePoint(a, -1.0, 1.0, 1.0);
+        this.addCubePoint(a, 1.0, -1.0, -1.0);
+        this.addCubePoint(a, -1.0, -1.0, -1.0);
+        this.addCubePoint(a, -1.0, 1.0, -1.0);
+        this.addCubePoint(a, 1.0, 1.0, -1.0);
+        this.addCubePoint(a, -1.0, 1.0, -1.0);
+        this.addCubePoint(a, -1.0, 1.0, 1.0);
+        this.addCubePoint(a, 1.0, 1.0, 1.0);
+        this.addCubePoint(a, 1.0, 1.0, -1.0);
+        this.addCubePoint(a, -1.0, -1.0, -1.0);
+        this.addCubePoint(a, 1.0, -1.0, -1.0);
+        this.addCubePoint(a, 1.0, -1.0, 1.0);
+        this.addCubePoint(a, -1.0, -1.0, 1.0);
+        this.addCubePoint(a, 1.0, -1.0, 1.0);
+        this.addCubePoint(a, 1.0, -1.0, -1.0);
+        this.addCubePoint(a, 1.0, 1.0, -1.0);
+        this.addCubePoint(a, 1.0, 1.0, 1.0);
+        this.addCubePoint(a, -1.0, -1.0, -1.0);
+        this.addCubePoint(a, -1.0, -1.0, 1.0);
+        this.addCubePoint(a, -1.0, 1.0, 1.0);
+        this.addCubePoint(a, -1.0, 1.0, -1.0);
+        this.addFaces(this.cubeCount * 24, block, p);
+        return this.cubeCount++;
+      }
     };
 
     ChunkView.prototype.addCubePoint = function(a, xdelta, ydelta, zdelta) {
       var p2, p3, s;
-      s = xdelta * 0.001;
+      s = 0.0000000;
       p2 = [a[0] + xdelta * 0.5 + s, a[1] + ydelta * 0.5 + s, a[2] + zdelta * 0.5 + s];
-      p3 = this.calcPoint(p2);
+      p3 = calcPoint(p2, this.options);
       this.vertices.push(p3[0]);
       this.vertices.push(p3[1]);
       return this.vertices.push(p3[2]);
@@ -357,5 +371,7 @@
   })();
 
   exports.ChunkView = ChunkView;
+
+  exports.calcPoint = calcPoint;
 
 }).call(this);

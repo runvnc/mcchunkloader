@@ -28,10 +28,12 @@ class ChunkView
     @filled = []
     @nomatch = {}
     if @options.ymin? then @ymin = @options.ymin else @ymin = 60
+    if @options.superflat? is 'true' then @options.superflat = true
     if @options.superflat? then @superflat = @options.superflat else @superflat = false
     if @options.showstuff? then @showStuff = @options.showstuff else @showStuff = 'diamondsmoss'    
     console.log 'superflat is ' + @superflat
     console.log 'showStuff is ' + @showStuff
+    console.log 'ymin is ' + @ymin
     
     if options.ymin? then @ymin = options.ymin
   
@@ -94,7 +96,8 @@ class ChunkView
               if not blockType?.t?
                 #if not (id in @notexture) then @notexture.push id
                 id = -1
-               
+              
+
               show = false
               show = (id > 0)
               
@@ -110,7 +113,8 @@ class ChunkView
                 @addBlock [x,y,z]
               else
                 blah = 1
-           
+                      
+
     @renderPoints()
 
   addBlock: (position) =>

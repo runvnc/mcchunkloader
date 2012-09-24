@@ -9,6 +9,11 @@ chunkview = require('chunkview')
 ChunkView = chunkview.ChunkView
 blockInfo = require('blockinfo').blockInfo
 
+Number.prototype.mod = (n) ->
+  ((this % n) + n) % n
+
+
+
 delay = (ms, func) ->
   setTimeout func, ms
 
@@ -34,13 +39,22 @@ class RegionRenderer
       @scene.add pointLight
 
   mcCoordsToWorld: (x, y, z) =>
+    chunkX = (Math.floor(x/16)).mod(32)
+    chunkZ = (Math.floor(z/16)).mod(32)
     posX = x % (32 * 16)
     posZ = z % (32 * 16)
-    chunkX = Math.floor(posX / 16)
-    chunkZ = Math.floor(posZ / 16)
-    posX -= chunkX * 16
-    posZ -= chunkZ * 16
-    
+    if x > 0
+      posX -= chunkX * 16
+    else
+      posX += chunkX * 16
+    if z > 0
+      posZ -= chunkZ * 16
+    else
+      posZ += chunkZ * 16
+    posX = Math.abs(posX)
+    posZ = Math.abs(posZ)
+    chunkX = Math.abs(chunkX)
+    chunkZ = Math.abs(chunkZ)
     verts = chunkview.calcPoint [posX, y, posZ], { chunkX, chunkZ }
     ret =
       x: verts[0]
@@ -133,17 +147,14 @@ class RegionRenderer
     return @textures[path]
 
   load: =>
-    console.log 'inside of load'
-    console.log 'options is'
-    console.log @options
     startX = @options.x * 1
     startZ = @options.z * 1
     camPos = @mcCoordsToWorld(startX,@options.y * 1,startZ)
     size = @options.size * 1
-    minx = Math.max camPos.chunkX - (size/2), 0
-    minz = Math.max camPos.chunkZ - (size/2), 0
-    maxx = Math.min camPos.chunkX + (size/2), 31
-    maxz = Math.min camPos.chunkZ + (size/2), 31
+    minx = camPos.chunkX - (size/2)
+    minz = camPos.chunkZ - (size/2)
+    maxx = camPos.chunkX + (size/2)
+    maxz = camPos.chunkZ + (size/2)
     @camera.position.x = camPos.x
     @camera.position.y = camPos.y
     @camera.position.z = camPos.z

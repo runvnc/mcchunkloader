@@ -133,9 +133,6 @@ class RegionRenderer
     return @textures[path]
 
   load: =>
-    console.log 'inside of load'
-    console.log 'options is'
-    console.log @options
     startX = @options.x * 1
     startZ = @options.z * 1
     camPos = @mcCoordsToWorld(startX,@options.y * 1,startZ)

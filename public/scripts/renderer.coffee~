@@ -43,14 +43,14 @@ class RegionRenderer
     chunkZ = (Math.floor(z/16)).mod(32)
     posX = x % (32 * 16)
     posZ = z % (32 * 16)
-    if x > 0
-      posX -= chunkX * 16
-    else
-      posX += chunkX * 16
-    if z > 0
-      posZ -= chunkZ * 16
-    else
-      posZ += chunkZ * 16
+    #if x > 0
+    posX -= chunkX * 16
+    #else
+    posX += chunkX * 16
+    #if z > 0
+    #  posZ -= chunkZ * 16
+    #else
+    #  posZ += chunkZ * 16
     posX = Math.abs(posX)
     posZ = Math.abs(posZ)
     chunkX = Math.abs(chunkX)

@@ -46,9 +46,9 @@ class RegionRenderer
     #if x > 0
     posX -= chunkX * 16
     #else
-    posX += chunkX * 16
+    #posX += chunkX * 16
     #if z > 0
-    #  posZ -= chunkZ * 16
+    posZ -= chunkZ * 16
     #else
     #  posZ += chunkZ * 16
     posX = Math.abs(posX)

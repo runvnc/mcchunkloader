@@ -13,7 +13,9 @@ delay = (ms, func) ->
   setTimeout func, ms
 
 class RegionRenderer
-  constructor: (@region) ->          
+  constructor: (@region, @options) ->          
+    if @options.y < 50
+      @options.superflat = true
     @mouseX = 0
     @mouseY = 0
     @textures = {}
@@ -51,7 +53,9 @@ class RegionRenderer
   loadChunk: (chunk, chunkX, chunkZ) =>
     options =
       nbt: chunk
-      ymin: 0
+      ymin: @options.ymin
+      showstuff: @options.showstuff
+      superflat: @options.superflat
       chunkX: chunkX
       chunkZ: chunkZ
     view = new ChunkView(options)
@@ -129,10 +133,13 @@ class RegionRenderer
     return @textures[path]
 
   load: =>
-    startX = 163
-    startZ = 197 
-    camPos = @mcCoordsToWorld(startX,70,startZ)
-    size = 6
+    console.log 'inside of load'
+    console.log 'options is'
+    console.log @options
+    startX = @options.x * 1
+    startZ = @options.z * 1
+    camPos = @mcCoordsToWorld(startX,@options.y * 1,startZ)
+    size = @options.size * 1
     minx = Math.max camPos.chunkX - (size/2), 0
     minz = Math.max camPos.chunkZ - (size/2), 0
     maxx = Math.min camPos.chunkX + (size/2), 31
@@ -140,7 +147,7 @@ class RegionRenderer
     @camera.position.x = camPos.x
     @camera.position.y = camPos.y
     @camera.position.z = camPos.z
-   
+    console.log 'minx is ' + minx + ' and minz is '+ minz
     for x in [minx..maxx]
       for z in [minz..maxz]
         region = @region

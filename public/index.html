@@ -34,6 +34,10 @@ h1 {
   width: 95%;
 }
 
+a, a:visited {
+  color: #fff;
+}
+
 </style>
 <script>
 function calcName() {
@@ -53,7 +57,7 @@ $(document).ready(function() {
   });
 
   $('#view').click(function() {
-    open_in_new_tab(encodeURI('viewer.html?url='+$('#url').val()+"&x="+$('#x').val()+"&y="+$('#y').val()+"&z="+$('#z').val()));
+    open_in_new_tab(encodeURI('viewer.html?url='+$('#url').val()+"&x="+$('#x').val()+"&y="+$('#y').val()+"&z="+$('#z').val() + "&size=6&showstuff=diamondsmoss&ymin=0"));
   });
 
   calcName();
@@ -66,6 +70,9 @@ $(document).ready(function() {
 <h1>Minecraft Map Viewer and Dungeon Finder</h1>
 
 </script><p>This is an online 3D Minecraft map viewer and dungeon finder that requires WebGL (new Firefox/Chrome). </p>
+
+<p><a href="http://localhost:3000/viewer.html?url=r.0.0.mca&x=172&y=67&z=189&size=6&showstuff=diamondsmoss&ymin=0">Click here to launch viewer with demo data.</a></p>
+
 <p>(Google translate of description in case Baidu will pick it up) minecraft地图浏览器地牢发现者 (minecraft dì tú liú lǎn qì dì láo fā xiàn zhě)</p>
 
 <script type="text/javascript"><!--
@@ -91,15 +98,18 @@ google_ad_height = 90;
 <p>To determine Minecraft coordinates, hit F3 in Minecraft. Enter x and z coordinates rounded to whole numbers below. Filename will update automatically.</p>
 
 <p>x: &nbsp;<input id="x" name="x" size="3" type="number" value="0" />
-y: &nbsp;<input id="y" name="y" size="3" type="number" value="63">
+y: &nbsp;<input id="y" name="y" size="3" type="number" value="70">
 z: &nbsp;
 <input id="z" name="x" size="3" type="number" value="0" /></p>
 
-<h2>Step 2: &nbsp;&nbsp; Upload .mca File
+<h2>Step 2 (optional): &nbsp;Upload .mca File</h2>
 <p>You will need to locate your .mca file inside of the .minecraft/saves/[worldname]/region folder. Based on the coordinates you entered, the filename should be <span id="fname"></span>.</p>
-<p>Once you have determined the correct file, upload it to a web server or file hosting site that supports direct downloads and cross-origin resource sharing (http://enable-cors.org/) (for example, DropBox).<br/><br/> Enter the URL below:</p>
+<p>Once you have determined the correct file, you have two choices: 
+<br/><br/><b>A)</b> to enable sharing with others, upload it to a web server that supports direct downloads and cross-origin resource sharing (http://enable-cors.org/) and enter the URL below:</p>
 
 <input type="text" id="url" size="80"/>
+
+<p><b>OR B) </b>just press the View button and you can select the file from your local machine on the next screen.</p>
 
 <h2>Step 3: &nbsp;&nbsp; Launch Viewer</h2>
 <button id="view">View</button>

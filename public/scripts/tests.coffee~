@@ -15,28 +15,42 @@ whichChunks = (region) ->
   chunks = {}
 
 onProgress = (evt) ->
-  console.log evt
-  console.log 'ratio is ' + (evt.position/evt.total)
-  console.log 'width is ' + $('#progouter').width * (evt.position/evt.total)
-  $('#proginner').width $('#progouter').width * (evt.position/evt.total)
-  #$('#proginner').width 400
+  $('#proginner').width $('#progouter').width() * (evt.position/evt.total)
 
 delay = (ms, func) ->
   setTimeout func, ms
 
+options = {}
+
 done = (arraybuffer) ->
   delay 150, ->
-    start = new Date().getTime()
-    data = arraybuffer
+    console.log 'arraybuffer is'
     console.log arraybuffer
-    testregion = new region.Region(data)
-    console.log testregion
-    whichChunks testregion
-    renderer = new render.RegionRenderer(testregion)
+    start = new Date().getTime()
+    data = arraybuffer    
+    testregion = new region.Region(data)        
+    renderer = new render.RegionRenderer(testregion, options)
     total = new Date().getTime() - start
     seconds = total / 1000.0
     console.log "loaded in #{seconds} seconds"
 
+
+window.fileselected = ->
+  binaryhttp.binaryFromFile document.getElementById('mcafile').files[0], onProgress, done
+  $('#mcafile').hide()
+
 exports.runTests = ->
-  binaryhttp.loadBinary '/r.0.0.mca', onProgress, done
-   
+  pos = window.location.href.indexOf '?'
+  paramstr = window.location.href.substr pos+1
+  params = paramstr.split '&'
+  options = {}
+  for param in params
+    tokens = param.split '='
+    options[tokens[0]] = tokens[1]
+  console.log options
+  if options.url?.length > 0
+    binaryhttp.loadBinary options.url, onProgress, done
+  else
+    $('#mcafile').show()
+ 
+  

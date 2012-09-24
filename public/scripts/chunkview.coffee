@@ -27,9 +27,12 @@ class ChunkView
     @rotcent = true
     @filled = []
     @nomatch = {}
-    @ymin = 60
-    if @options.superflat then @superflat = @options.superflat else @superflat = false
-    if @options.showstuff then @showStuff = @options.showstuff else @showStuff = 'diamondsmoss'    
+    if @options.ymin? then @ymin = @options.ymin else @ymin = 60
+    if @options.superflat? then @superflat = @options.superflat else @superflat = false
+    if @options.showstuff? then @showStuff = @options.showstuff else @showStuff = 'diamondsmoss'    
+    console.log 'superflat is ' + @superflat
+    console.log 'showStuff is ' + @showStuff
+    
     if options.ymin? then @ymin = options.ymin
   
   getBlockAt: (x, y, z) =>

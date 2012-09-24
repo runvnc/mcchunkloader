@@ -51,7 +51,7 @@
     </head>
     <body>
       <div id="progouter"></div><div id="proginner"></div>
-      <input type="file" id="mcafile" name="thefile" onchange="fileselected()"/>
+      <input type="file" id="mcafile" onchange="fileselected()"/>
       <script src="scripts/jquery.min.js"></script>
       <script src="scripts/modules.js"></script>
       <script src="scripts/binaryhttp.js"></script>

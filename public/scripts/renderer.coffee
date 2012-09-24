@@ -14,6 +14,8 @@ delay = (ms, func) ->
 
 class RegionRenderer
   constructor: (@region, @options) ->          
+    if @options.y < 50
+      @options.superflat = true
     @mouseX = 0
     @mouseY = 0
     @textures = {}
@@ -131,10 +133,13 @@ class RegionRenderer
     return @textures[path]
 
   load: =>
-    startX = options.x
-    startZ = options.z
-    camPos = @mcCoordsToWorld(startX,options.y,startZ)
-    size = options.size
+    console.log 'inside of load'
+    console.log 'options is'
+    console.log @options
+    startX = @options.x * 1
+    startZ = @options.z * 1
+    camPos = @mcCoordsToWorld(startX,@options.y * 1,startZ)
+    size = @options.size * 1
     minx = Math.max camPos.chunkX - (size/2), 0
     minz = Math.max camPos.chunkZ - (size/2), 0
     maxx = Math.min camPos.chunkX + (size/2), 31
@@ -142,7 +147,7 @@ class RegionRenderer
     @camera.position.x = camPos.x
     @camera.position.y = camPos.y
     @camera.position.z = camPos.z
-   
+    console.log 'minx is ' + minx + ' and minz is '+ minz
     for x in [minx..maxx]
       for z in [minz..maxz]
         region = @region

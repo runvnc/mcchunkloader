@@ -10,7 +10,18 @@ ChunkSizeX = 16
 
 cubeCount = 0
 
+calcOpts = {}
+
+times = 0
+
 calcPoint = (pos, opts) =>
+  if times < 500
+    console.log 'options:'
+    console.log opts
+    console.log 'pos:'
+    console.log pos
+    times++
+
   verts = []
   verts.push pos[0] + opts.chunkX * 16 * 1.00000
   verts.push (pos[1] + 1) * 1.0

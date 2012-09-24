@@ -41,20 +41,23 @@ class RegionRenderer
   mcCoordsToWorld: (x, y, z) =>
     chunkX = (Math.floor(x/16)).mod(32)
     chunkZ = (Math.floor(z/16)).mod(32)
-    posX = x % (32 * 16)
-    posZ = z % (32 * 16)
+    #if x < 0 then chunkX = 32 - chunkX
+    #if z < 0 then chunkZ = 32 - chunkZ
+    posX = (x.mod(32 * 16)).mod(16)
+    posZ = (z.mod(32 * 16)).mod(16)
     #if x > 0
-    posX -= chunkX * 16
+    #  posX -= chunkX * 16
     #else
-    #posX += chunkX * 16
+    #  posX += chunkX * 16
     #if z > 0
-    posZ -= chunkZ * 16
+    #  posZ -= chunkZ * 16
     #else
     #  posZ += chunkZ * 16
     posX = Math.abs(posX)
     posZ = Math.abs(posZ)
     chunkX = Math.abs(chunkX)
     chunkZ = Math.abs(chunkZ)
+
     verts = chunkview.calcPoint [posX, y, posZ], { chunkX, chunkZ }
     ret =
       x: verts[0]
@@ -151,10 +154,11 @@ class RegionRenderer
     startZ = @options.z * 1
     camPos = @mcCoordsToWorld(startX,@options.y * 1,startZ)
     size = @options.size * 1
-    minx = camPos.chunkX - (size/2)
-    minz = camPos.chunkZ - (size/2)
-    maxx = camPos.chunkX + (size/2)
-    maxz = camPos.chunkZ + (size/2)
+    size = 1
+    minx = camPos.chunkX - size
+    minz = camPos.chunkZ - size
+    maxx = camPos.chunkX + size
+    maxz = camPos.chunkZ + size
     @camera.position.x = camPos.x
     @camera.position.y = camPos.y
     @camera.position.z = camPos.z

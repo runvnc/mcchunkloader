@@ -68,10 +68,8 @@
       var chunkX, chunkZ, posX, posZ, ret, verts;
       chunkX = (Math.floor(x / 16)).mod(32);
       chunkZ = (Math.floor(z / 16)).mod(32);
-      posX = x % (32 * 16);
-      posZ = z % (32 * 16);
-      posX -= chunkX * 16;
-      posX += chunkX * 16;
+      posX = (x.mod(32 * 16)).mod(16);
+      posZ = (z.mod(32 * 16)).mod(16);
       posX = Math.abs(posX);
       posZ = Math.abs(posZ);
       chunkX = Math.abs(chunkX);
@@ -188,10 +186,11 @@
       startZ = this.options.z * 1;
       camPos = this.mcCoordsToWorld(startX, this.options.y * 1, startZ);
       size = this.options.size * 1;
-      minx = camPos.chunkX - (size / 2);
-      minz = camPos.chunkZ - (size / 2);
-      maxx = camPos.chunkX + (size / 2);
-      maxz = camPos.chunkZ + (size / 2);
+      size = 1;
+      minx = camPos.chunkX - size;
+      minz = camPos.chunkZ - size;
+      maxx = camPos.chunkX + size;
+      maxz = camPos.chunkZ + size;
       this.camera.position.x = camPos.x;
       this.camera.position.y = camPos.y;
       this.camera.position.z = camPos.z;

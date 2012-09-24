@@ -34,6 +34,10 @@ h1 {
   width: 95%;
 }
 
+a, a:visited {
+  color: #fff;
+}
+
 </style>
 <script>
 function calcName() {

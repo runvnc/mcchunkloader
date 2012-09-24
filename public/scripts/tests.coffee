@@ -24,13 +24,9 @@ options = {}
 
 done = (arraybuffer) ->
   delay 150, ->
-    console.log 'arraybuffer is'
-    console.log arraybuffer
     start = new Date().getTime()
     data = arraybuffer    
     testregion = new region.Region(data) 
-    console.log 'region is'
-    console.log testregion       
     renderer = new render.RegionRenderer(testregion, options)
     total = new Date().getTime() - start
     seconds = total / 1000.0

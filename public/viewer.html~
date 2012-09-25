@@ -22,19 +22,22 @@
         #info {
           color: #fff;
           position: absolute;
-          top: 0px; width: 100%;
+          right: 5px;
+          top: 0px; 
           padding: 5px;
           z-index: 100;
         }
         #proginner {
           position: absolute;
           left: 40%;
+          top: 5px;
           width: 0px;
           height: 15px;
           background-color: #fff;
         }
         #progouter {
           position: absolute;
+          top: 5px;
           left: 40%;
           height:15px;
           width: 300px;
@@ -50,6 +53,7 @@
 
     </head>
     <body>
+      <div id="info">(left click: forward, right click: backward)</a></div>
       <div id="progouter"></div><div id="proginner"></div>
       <input type="file" id="mcafile" name="thefile" onchange="fileselected()"/>
       <script src="scripts/jquery.min.js"></script>

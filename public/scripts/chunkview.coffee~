@@ -18,6 +18,8 @@ calcPoint = (pos, opts) =>
   if times < 500
     console.log 'options:'
     console.log opts
+    console.log 'pos:'
+    console.log pos
     times++
 
   verts = []

@@ -53,7 +53,9 @@
 
     </head>
     <body>
-      <div id="info">(left click: forward, right click: backward)</a></div>
+      <div id="info">(left click: forward, right click: backward)</a><br/>
+        <a href="http://minecraft-dungeons.com/">view to your own map data</a>
+       </div>
       <div id="progouter"></div><div id="proginner"></div>
       <input type="file" id="mcafile" name="thefile" onchange="fileselected()"/>
       <script src="scripts/jquery.min.js"></script>

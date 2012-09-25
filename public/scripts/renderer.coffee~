@@ -57,6 +57,7 @@ class RegionRenderer
     posZ = Math.abs(posZ)
     chunkX = Math.abs(chunkX)
     chunkZ = Math.abs(chunkZ)
+
     verts = chunkview.calcPoint [posX, y, posZ], { chunkX, chunkZ }
     ret =
       x: verts[0]
@@ -153,7 +154,6 @@ class RegionRenderer
     startZ = @options.z * 1
     camPos = @mcCoordsToWorld(startX,@options.y * 1,startZ)
     size = @options.size * 1
-    size = 1
     minx = camPos.chunkX - size
     minz = camPos.chunkZ - size
     maxx = camPos.chunkX + size

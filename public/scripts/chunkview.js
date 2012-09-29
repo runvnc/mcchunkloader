@@ -24,13 +24,6 @@
 
   calcPoint = function(pos, opts) {
     var verts;
-    if (times < 500) {
-      console.log('options:');
-      console.log(opts);
-      console.log('pos:');
-      console.log(pos);
-      times++;
-    }
     verts = [];
     verts.push(pos[0] + opts.chunkX * 16 * 1.00000);
     verts.push((pos[1] + 1) * 1.0);
@@ -119,7 +112,7 @@
             if (k >= ChunkSizeZ) continue;
             if (!(i === x && j === y && k === z)) {
               blockID = this.getBlockAt(i, j, k);
-              if (blockID === 0 || blockID === -1 || blockID === -10) return true;
+              if (blockID === 0 || blockID === -1) return true;
             }
           }
         }
@@ -226,11 +219,24 @@
     };
 
     ChunkView.prototype.hasNeighbor = function(bl, p, offset0, offset1, offset2) {
-      var info, n;
+      var id, info, n, _ref, _ref2;
       return false;
       n = [p[0] + offset0, p[1] + offset1, p[2] + offset2];
+      id = this.getBlockAt(n[0], n[1], n[2]);
+      if (id === 1 || id === 2) {
+        return true;
+      } else {
+        return false;
+      }
+      if (!(id != null) || (id != null) < 1) return false;
+      if (!(id === 1 || id === 2 || id === 3 || id === 4 || id === 5)) {
+        return false;
+      }
       info = this.getBlockType(n[0], n[1], n[2]);
-      return (info.id > 0 && ((info != null ? info.t : void 0) != null)) || (((info != null ? info.t : void 0) != null) === 8 || ((info != null ? info.t : void 0) != null) === 9);
+      if ((_ref = info.id) === 0 || _ref === 37 || _ref === 38 || _ref === 50) {
+        return false;
+      }
+      return (info != null) && (info != null ? info.id : void 0) > 0 && (info.t != null) && info.t[0] && !((_ref2 = info.id) === 37 || _ref2 === 38);
     };
 
     ChunkView.prototype.addTexturedBlock = function(p) {
@@ -303,12 +309,12 @@
       coordsbottom = coords;
       if ((_ref = bl.id) === 37 || _ref === 38) {
         show = {
-          front: false,
-          back: false,
-          top: false,
-          bottom: false,
-          left: false,
-          right: false
+          front: true,
+          back: true,
+          top: true,
+          bottom: true,
+          left: true,
+          right: true
         };
       } else {
         show.front = !(this.hasNeighbor(bl, p, 0, 0, 1));

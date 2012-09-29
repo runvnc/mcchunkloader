@@ -65,7 +65,7 @@ class ChunkView
           if k >= ChunkSizeZ then continue
           if not (i is x and j is y and k is z)
             blockID = @getBlockAt i, j, k
-            if blockID is 0 or blockID is -1 or blockID is -10              
+            if blockID is 0 or blockID is -1 #or blockID is -10              
               return true
 
     return false
@@ -95,12 +95,13 @@ class ChunkView
               #id = @getBlockAt x, y, z
               blockType = blockInfo['_'+id]             
               if not blockType?
-                #if not (id in @unknown) then @unknown.push id 
-                id = -1            
-              if not blockType?.t?
-                #if not (id in @notexture) then @notexture.push id
                 id = -1
-              
+                #id = 1
+              if not blockType?.t?
+                id = -1
+                #if not (id in @notexture) then @notexture.push id
+                #id = -1
+                #id = 1
 
               show = false
               show = (id > 0)
@@ -157,13 +158,15 @@ class ChunkView
 
   hasNeighbor: (bl, p, offset0, offset1, offset2) =>
     return false
-    n = [p[0] + offset0, p[1] + offset1, p[2] + offset2]
+    n = [p[0] + offset0, p[1] + offset1, p[2] + offset2]   
+    id = @getBlockAt n[0], n[1], n[2]
+    if id is 1 or id is 2 then return true else return false
+    if not id? or id? < 1
+      return false
+    if not (id in [1, 2, 3, 4, 5]) then return false
     info = @getBlockType(n[0], n[1], n[2])
-    return (info.id > 0 and info?.t?) or (info?.t? is 8 or info?.t? is 9)
-    #if info?.id? is 8 or info?.id? is 9
-    #  return true
-    #else
-    #  return false
+    if info.id in [0, 37, 38, 50] then return false
+    return (info? and info?.id > 0 and info.t? and info.t[0] and not (info.id in [37, 38]) ) #or (info?.t? is 8 or info?.t? is 9)
 
   addTexturedBlock: (p) =>
     a = p
@@ -240,12 +243,12 @@ class ChunkView
 
     if bl.id in [37, 38]
       show =
-        front: false
-        back: false
-        top: false
-        bottom: false
-        left: false
-        right: false
+        front: true #false
+        back: true #false
+        top: true #false
+        bottom: true #false
+        left: true #false
+        right: true #false
     else      
       show.front = not (@hasNeighbor(bl, p, 0, 0, 1))
       show.back = not (@hasNeighbor(bl, p, 0, 0, -1))
@@ -253,6 +256,9 @@ class ChunkView
       show.bottom = not (@hasNeighbor(bl, p, 0, -1, 0))
       show.left = not (@hasNeighbor(bl, p, -1, 0, 0))
       show.right = not (@hasNeighbor(bl, p, 1, 0, 0))
+    
+    #if not bl.id in [37,38] and not (show.front or show.back or show.top or show.bottom or show.left or show.right)
+    #  show = { front: true, back: true, top: true, bottom: true, left: true, right: true }
 
     if bl.id is 2
       dirtgrass = blockInfo['_2x']      
@@ -269,6 +275,9 @@ class ChunkView
     totfaces++  if show.bottom
     totfaces++  if show.left
     totfaces++  if show.right
+
+    #if totfaces > 1 or totfaces < 1
+    #  show = { front: true, back: true, top: true, bottom: true, left: true, right: true }
 
     @indices.push.apply @indices, [i + 0, i + 1, i + 2, i + 0, i + 2, i + 3]  if show.front # Front face
     @indices.push.apply @indices, [i + 4, i + 5, i + 6, i + 4, i + 6, i + 7]  if show.back # Back face

@@ -49,6 +49,12 @@
           position: absolute;
           left: 5px;
         }
+        /*#pointer-lock-element {
+          z-index: 9999;
+          position: absolute;
+          width: 100%;
+          height: 100%;
+        }*/
     </style>
 
     </head>
@@ -58,6 +64,7 @@
        </div>
       <div id="progouter"></div><div id="proginner"></div>
       <input type="file" id="mcafile" name="thefile" onchange="fileselected()"/>
+      <div id="pointer-lock-element"></div>
       <script src="scripts/jquery.min.js"></script>
       <script src="scripts/modules.js"></script>
       <script src="scripts/binaryhttp.js"></script>
@@ -67,6 +74,7 @@
       <script src="scripts/chunk.js"></script>
       <script src="scripts/region.js"></script>
       <script src="scripts/three.min.js"></script>
+      <script src="scripts/fpcontrols2.js"></script>
       <script src="scripts/Stats.js"></script>
       <script src="scripts/blockinfo.js"></script>
       <script src="scripts/chunkview.js"></script>

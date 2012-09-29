@@ -28,6 +28,7 @@
   RegionRenderer = (function() {
 
     function RegionRenderer(region, options) {
+      var canvas;
       this.region = region;
       this.options = options;
       this.render = __bind(this.render, this);
@@ -49,6 +50,11 @@
       this.init();
       this.animate();
       this.load();
+      document.body.requestPL = document.body.requestPointerLock || document.body.mozRequestPointerLock || document.body.webkitRequestPointerLock;
+      canvas = document.getElementsByTagName('canvas')[0];
+      canvas.addEventListener('click', (function() {
+        return document.body.requestPL();
+      }), false);
     }
 
     RegionRenderer.prototype.addTorches = function(view) {
@@ -155,7 +161,6 @@
       geometry.computeVertexNormals();
       material = this.loadTexture('/terrain.png');
       mesh = new THREE.Mesh(geometry, material);
-      mesh.doubleSided = false;
       this.scene.add(mesh);
       centerX = mesh.position.x + 0.5 * (geometry.boundingBox.max.x - geometry.boundingBox.min.x);
       centerY = mesh.position.y + 0.5 * (geometry.boundingBox.max.y - geometry.boundingBox.min.y);
@@ -175,7 +180,7 @@
       texture = new THREE.Texture(image, new THREE.UVMapping(), THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.NearestFilter, THREE.NearestFilter);
       this.textures[path] = new THREE.MeshLambertMaterial({
         map: texture,
-        transparent: true
+        transparent: false
       });
       return this.textures[path];
     };
@@ -186,7 +191,6 @@
       startZ = this.options.z * 1;
       camPos = this.mcCoordsToWorld(startX, this.options.y * 1, startZ);
       size = this.options.size * 1;
-      size = 1;
       minx = camPos.chunkX - size;
       minz = camPos.chunkZ - size;
       maxx = camPos.chunkX + size;
@@ -245,10 +249,8 @@
       this.renderer.setClearColorHex(0x6D839C, 1);
       this.renderer.setSize(window.innerWidth, window.innerHeight);
       container.appendChild(this.renderer.domElement);
-      this.controls = new THREE.FirstPersonControls(this.camera);
+      this.controls = new THREE.FirstPersonControls2(this.camera);
       this.controls.movementSpeed = 20;
-      this.controls.lookSpeed = 0.125;
-      this.controls.lookVertical = true;
       this.stats = new Stats();
       this.stats.domElement.style.position = 'absolute';
       this.stats.domElement.style.top = '0px';
@@ -261,7 +263,6 @@
       this.windowHalfY = window.innerHeight / 2;
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
-      this.controls.handleResize();
       return this.renderer.setSize(window.innerWidth, window.innerHeight);
     };
 

@@ -4,6 +4,8 @@ if window?
 
 SCALE = 5
 
+controls = null
+
 chunks = require 'chunk'
 chunkview = require('chunkview')
 ChunkView = chunkview.ChunkView
@@ -13,9 +15,11 @@ Number.prototype.mod = (n) ->
   ((this % n) + n) % n
 
 
-
 delay = (ms, func) ->
   setTimeout func, ms
+
+canvas = null
+time = null
 
 class RegionRenderer
   constructor: (@region, @options) ->          
@@ -27,16 +31,62 @@ class RegionRenderer
 
     @windowHalfX = window.innerWidth / 2;
     @windowHalfY = window.innerHeight / 2;
+   
+    blocker = document.getElementById("blocker")
+    instructions = document.getElementById("instructions")
 
+    # http://www.html5rocks.com/en/tutorials/pointerlock/intro/
+    havePointerLock = "pointerLockElement" of document or "mozPointerLockElement" of document or "webkitPointerLockElement" of document
+    if havePointerLock
+      console.log 'havepointerlock'
+      element = document.body
+      pointerlockchange = (event) =>
+        if document.pointerLockElement is element or document.mozPointerLockElement is element or document.webkitPointerLockElement is element
+          controls.enabled = true
+          blocker.style.display = "none"
+        else
+          controls.enabled = false
+          blocker.style.display = "-webkit-box"
+          blocker.style.display = "-moz-box"
+          blocker.style.display = "box"
+          instructions.style.display = ""
+
+      pointerlockerror = (event) ->
+        instructions.style.display = ""
+
+      # Hook pointer lock state change events
+      document.addEventListener "pointerlockchange", pointerlockchange, false
+      document.addEventListener "mozpointerlockchange", pointerlockchange, false
+      document.addEventListener "webkitpointerlockchange", pointerlockchange, false
+      document.addEventListener "pointerlockerror", pointerlockerror, false
+      document.addEventListener "mozpointerlockerror", pointerlockerror, false
+      document.addEventListener "webkitpointerlockerror", pointerlockerror, false
+      instructions.addEventListener "click", ((event) ->
+        instructions.style.display = "none"
+        
+        # Ask the browser to lock the pointer
+        element.requestPointerLock = element.requestPointerLock or element.mozRequestPointerLock or element.webkitRequestPointerLock
+        if /Firefox/i.test(navigator.userAgent)
+          fullscreenchange = (event) ->
+            if document.fullscreenElement is element or document.mozFullscreenElement is element or document.mozFullScreenElement is element
+              document.removeEventListener "fullscreenchange", fullscreenchange
+              document.removeEventListener "mozfullscreenchange", fullscreenchange
+              element.requestPointerLock()
+
+          document.addEventListener "fullscreenchange", fullscreenchange, false
+          document.addEventListener "mozfullscreenchange", fullscreenchange, false
+          element.requestFullscreen = element.requestFullscreen or element.mozRequestFullscreen or element.mozRequestFullScreen or element.webkitRequestFullscreen
+          element.requestFullscreen()
+        else
+          element.requestPointerLock()
+      ), false
+    else
+      instructions.innerHTML = "Your browser doesn't seem to support Pointer Lock API"
+    
     @init()
     @animate()
     @load()
-    document.body.requestPL = document.body.requestPointerLock or
-			     document.body.mozRequestPointerLock or
-			     document.body.webkitRequestPointerLock
-    canvas = document.getElementsByTagName('canvas')[0]
-
-    canvas.addEventListener 'click', (-> document.body.requestPL()), false
+ 
     
   addTorches: (view) =>
     for coords in view.torches
@@ -51,14 +101,7 @@ class RegionRenderer
     #if z < 0 then chunkZ = 32 - chunkZ
     posX = (x.mod(32 * 16)).mod(16)
     posZ = (z.mod(32 * 16)).mod(16)
-    #if x > 0
-    #  posX -= chunkX * 16
-    #else
-    #  posX += chunkX * 16
-    #if z > 0
-    #  posZ -= chunkZ * 16
-    #else
-    #  posZ += chunkZ * 16
+
     posX = Math.abs(posX)
     posZ = Math.abs(posZ)
     chunkX = Math.abs(chunkX)
@@ -136,10 +179,7 @@ class RegionRenderer
     mesh = new THREE.Mesh(geometry, material)
     #mesh.doubleSided = true
     @scene.add mesh
-    #@camera.position.x = view.vertices[0]
-    #@camera.position.y = view.vertices[1]
-    #@camera.position.z = view.vertices[2]
-    
+    @objects.push mesh
     centerX = mesh.position.x + 0.5 * ( geometry.boundingBox.max.x - geometry.boundingBox.min.x )
     centerY = mesh.position.y + 0.5 * ( geometry.boundingBox.max.y - geometry.boundingBox.min.y )
     centerZ = mesh.position.z + 0.5 * ( geometry.boundingBox.max.z - geometry.boundingBox.min.z )
@@ -164,9 +204,12 @@ class RegionRenderer
     minz = camPos.chunkZ - size
     maxx = camPos.chunkX + size
     maxz = camPos.chunkZ + size
-    @camera.position.x = camPos.x
-    @camera.position.y = camPos.y
-    @camera.position.z = camPos.z
+    #@camera.position.x = camPos.x
+    #@camera.position.y = camPos.y
+    #@camera.position.z = camPos.z
+    controls.getObject().position.x = camPos.x
+    controls.getObject().position.y = camPos.y
+    controls.getObject().position.z = camPos.z
     console.log 'minx is ' + minx + ' and minz is '+ minz
     for x in [minx..maxx]
       for z in [minz..maxz]
@@ -186,11 +229,10 @@ class RegionRenderer
     $('#proginner').width 300*ratio
 
   init: =>
-
     container = document.createElement 'div'
     document.body.appendChild container 
 
-    @clock = new THREE.Clock()
+    @objects = []
 
     @camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 1500 )
    
@@ -214,10 +256,14 @@ class RegionRenderer
     @renderer.setSize window.innerWidth, window.innerHeight
     container.appendChild @renderer.domElement
 
-    @controls = new THREE.FirstPersonControls2( @camera )
-    @controls.movementSpeed = 20
+    controls = new PointerLockControls( @camera )
+    @scene.add controls.getObject()
+    #controls.movementSpeed = 20
     #@controls.lookSpeed = 0.125
     #@controls.lookVertical = true
+
+    @ray = new THREE.Ray()
+    @ray.direction.set( 0, -1, 0 )
 
     @stats = new Stats()
     @stats.domElement.style.position = 'absolute'
@@ -237,19 +283,25 @@ class RegionRenderer
 
   animate: =>
     requestAnimationFrame @animate
+
+    controls.isOnObject true
+    #@ray.origin.copy controls.getObject().position
+    #@ray.origin.y -= 0.01
+    #if @objects.length > 0      
+    #  d = 0
+    #  intersections = @ray.intersectObjects(@objects)
+    #if intersections?.length > 0
+    #   d = 1
+    ##  distance = intersections[0].distance
+    #  controls.isOnObject true  if distance > 0 and distance < 1
+
     @render()
     @stats.update()
 
-  render: =>
-    time = Date.now() * 0.00005
-    @controls.update @clock.getDelta()
-    #@pointLight.position.set @camera.position.x, @camera.position.y, @camera.position.z
-    #@camera.lookAt @scene.position
-    #for i in [0..@scene.children.length-1]
-    ##  object = @scene.children[ i ]
-    #  if object instanceof THREE.ParticleSystem
-    #    object.rotation.y = time * ( i < 4 ? i + 1 : - ( i + 1 ) )
+  render: =>     
+    controls.update Date.now() - time
     @renderer.render @scene, @camera
+    time = Date.now()
 
 
 exports.RegionRenderer = RegionRenderer

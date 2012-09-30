@@ -1,5 +1,5 @@
 (function() {
-  var ChunkView, RegionRenderer, SCALE, blockInfo, chunks, chunkview, delay, exports, require,
+  var ChunkView, RegionRenderer, SCALE, blockInfo, canvas, chunks, chunkview, controls, delay, exports, require, time,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   if (typeof window !== "undefined" && window !== null) {
@@ -8,6 +8,8 @@
   }
 
   SCALE = 5;
+
+  controls = null;
 
   chunks = require('chunk');
 
@@ -25,10 +27,15 @@
     return setTimeout(func, ms);
   };
 
+  canvas = null;
+
+  time = null;
+
   RegionRenderer = (function() {
 
     function RegionRenderer(region, options) {
-      var canvas;
+      var blocker, element, havePointerLock, instructions, pointerlockchange, pointerlockerror,
+        _this = this;
       this.region = region;
       this.options = options;
       this.render = __bind(this.render, this);
@@ -47,14 +54,59 @@
       this.textures = {};
       this.windowHalfX = window.innerWidth / 2;
       this.windowHalfY = window.innerHeight / 2;
+      blocker = document.getElementById("blocker");
+      instructions = document.getElementById("instructions");
+      havePointerLock = "pointerLockElement" in document || "mozPointerLockElement" in document || "webkitPointerLockElement" in document;
+      if (havePointerLock) {
+        console.log('havepointerlock');
+        element = document.body;
+        pointerlockchange = function(event) {
+          if (document.pointerLockElement === element || document.mozPointerLockElement === element || document.webkitPointerLockElement === element) {
+            controls.enabled = true;
+            return blocker.style.display = "none";
+          } else {
+            controls.enabled = false;
+            blocker.style.display = "-webkit-box";
+            blocker.style.display = "-moz-box";
+            blocker.style.display = "box";
+            return instructions.style.display = "";
+          }
+        };
+        pointerlockerror = function(event) {
+          return instructions.style.display = "";
+        };
+        document.addEventListener("pointerlockchange", pointerlockchange, false);
+        document.addEventListener("mozpointerlockchange", pointerlockchange, false);
+        document.addEventListener("webkitpointerlockchange", pointerlockchange, false);
+        document.addEventListener("pointerlockerror", pointerlockerror, false);
+        document.addEventListener("mozpointerlockerror", pointerlockerror, false);
+        document.addEventListener("webkitpointerlockerror", pointerlockerror, false);
+        instructions.addEventListener("click", (function(event) {
+          var fullscreenchange;
+          instructions.style.display = "none";
+          element.requestPointerLock = element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock;
+          if (/Firefox/i.test(navigator.userAgent)) {
+            fullscreenchange = function(event) {
+              if (document.fullscreenElement === element || document.mozFullscreenElement === element || document.mozFullScreenElement === element) {
+                document.removeEventListener("fullscreenchange", fullscreenchange);
+                document.removeEventListener("mozfullscreenchange", fullscreenchange);
+                return element.requestPointerLock();
+              }
+            };
+            document.addEventListener("fullscreenchange", fullscreenchange, false);
+            document.addEventListener("mozfullscreenchange", fullscreenchange, false);
+            element.requestFullscreen = element.requestFullscreen || element.mozRequestFullscreen || element.mozRequestFullScreen || element.webkitRequestFullscreen;
+            return element.requestFullscreen();
+          } else {
+            return element.requestPointerLock();
+          }
+        }), false);
+      } else {
+        instructions.innerHTML = "Your browser doesn't seem to support Pointer Lock API";
+      }
       this.init();
       this.animate();
       this.load();
-      document.body.requestPL = document.body.requestPointerLock || document.body.mozRequestPointerLock || document.body.webkitRequestPointerLock;
-      canvas = document.getElementsByTagName('canvas')[0];
-      canvas.addEventListener('click', (function() {
-        return document.body.requestPL();
-      }), false);
     }
 
     RegionRenderer.prototype.addTorches = function(view) {
@@ -162,6 +214,7 @@
       material = this.loadTexture('/terrain.png');
       mesh = new THREE.Mesh(geometry, material);
       this.scene.add(mesh);
+      this.objects.push(mesh);
       centerX = mesh.position.x + 0.5 * (geometry.boundingBox.max.x - geometry.boundingBox.min.x);
       centerY = mesh.position.y + 0.5 * (geometry.boundingBox.max.y - geometry.boundingBox.min.y);
       centerZ = mesh.position.z + 0.5 * (geometry.boundingBox.max.z - geometry.boundingBox.min.z);
@@ -195,9 +248,9 @@
       minz = camPos.chunkZ - size;
       maxx = camPos.chunkX + size;
       maxz = camPos.chunkZ + size;
-      this.camera.position.x = camPos.x;
-      this.camera.position.y = camPos.y;
-      this.camera.position.z = camPos.z;
+      controls.getObject().position.x = camPos.x;
+      controls.getObject().position.y = camPos.y;
+      controls.getObject().position.z = camPos.z;
       console.log('minx is ' + minx + ' and minz is ' + minz);
       _results = [];
       for (x = minx; minx <= maxx ? x <= maxx : x >= maxx; minx <= maxx ? x++ : x--) {
@@ -236,7 +289,7 @@
       var container, pointLight;
       container = document.createElement('div');
       document.body.appendChild(container);
-      this.clock = new THREE.Clock();
+      this.objects = [];
       this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1500);
       this.scene = new THREE.Scene();
       this.scene.add(new THREE.AmbientLight(0x333333));
@@ -249,8 +302,10 @@
       this.renderer.setClearColorHex(0x6D839C, 1);
       this.renderer.setSize(window.innerWidth, window.innerHeight);
       container.appendChild(this.renderer.domElement);
-      this.controls = new THREE.FirstPersonControls2(this.camera);
-      this.controls.movementSpeed = 20;
+      controls = new PointerLockControls(this.camera);
+      this.scene.add(controls.getObject());
+      this.ray = new THREE.Ray();
+      this.ray.direction.set(0, -1, 0);
       this.stats = new Stats();
       this.stats.domElement.style.position = 'absolute';
       this.stats.domElement.style.top = '0px';
@@ -268,15 +323,15 @@
 
     RegionRenderer.prototype.animate = function() {
       requestAnimationFrame(this.animate);
+      controls.isOnObject(true);
       this.render();
       return this.stats.update();
     };
 
     RegionRenderer.prototype.render = function() {
-      var time;
-      time = Date.now() * 0.00005;
-      this.controls.update(this.clock.getDelta());
-      return this.renderer.render(this.scene, this.camera);
+      controls.update(Date.now() - time);
+      this.renderer.render(this.scene, this.camera);
+      return time = Date.now();
     };
 
     return RegionRenderer;

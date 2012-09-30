@@ -9,7 +9,7 @@ THREE.FirstPersonControls2 = function ( object, domElement ) {
 	this.object = object;
 	this.target = new THREE.Vector3( 0, 0, 0 );
 
-	this.domElement = ( domElement !== undefined ) ? domElement : document;
+	this.domElement = ( domElement !== undefined ) ? domElement : document.body;
 
 	this.movementSpeed = 1.0;
 	this.lookSpeed = 15.0;
@@ -105,22 +105,25 @@ THREE.FirstPersonControls2 = function ( object, domElement ) {
 
 	this.onMouseMove = function ( event ) {
 
-		if (document.pointerLockElement || document.webkitPointerLockElement ||
-        document.mozPointerLockElement) {
+		//if (true || document.pointerLockElement || document.webkitPointerLockElement ||
+    //    document.mozPointerLockElement) {
       this.deltaX = event.movementX ||
                     event.mozMovementX          ||
                     event.webkitMovementX       ||
-                    0;
+                    0 * 1.001;
+      console.log('deltax is ' + this.deltaX);
+      
       this.deltaY = event.movementY         ||
                     event.mozMovementY      ||
                     event.webkitMovementY   ||
-                    0;
-		} else {      
-			this.deltaX = event.pageX - this.lastX;
-			this.deltaY = event.pageY - this.lastY;
-			this.lastX = event.pageX;
-			this.lastY = event.pageY;
-		}
+                    0 * 1.001;
+     
+		//} else {      
+		//	this.deltaX = event.pageX - this.lastX;
+		//	this.deltaY = event.pageY - this.lastY;
+		//	this.lastX = event.pageX;
+		//	this.lastY = event.pageY;
+		//}
 
 	};
 
@@ -175,12 +178,12 @@ THREE.FirstPersonControls2 = function ( object, domElement ) {
 	};
 
 	this.update = function( delta ) {
+    console.log('delta is ' + delta);
+		//if ( this.freeze ) {
+    //
+		//	return;
 
-		if ( this.freeze ) {
-
-			return;
-
-		}
+		//}
 
 		if ( this.heightSpeed ) {
 
@@ -206,8 +209,9 @@ THREE.FirstPersonControls2 = function ( object, domElement ) {
 		if ( this.moveUp ) this.object.translateY( actualMoveSpeed );
 		if ( this.moveDown ) this.object.translateY( - actualMoveSpeed );
 
-		var actualLookSpeed = this.activeLook ?
-			delta * this.lookSpeed : 0;
+		//var actualLookSpeed = this.activeLook ?
+		//	delta * this.lookSpeed : 0;
+    var actualLookSpeed = 1.0;
 
 		// Normalize the vertical look speed when using verticalLookRatio.
 		var verticalLookRatio = this.constrainVertical ?

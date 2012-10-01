@@ -183,11 +183,17 @@ class ChunkView
   addTexturedBlock: (p) =>
     a = p
     block = @getBlockInfo(p)
+    blockType = block.type
     if block?.s?
-      if not @special[block.type]?
-        @special[block.type] = []
-      @special[block.type].push calcPoint(p, this.options)
-      console.log 'added ' + block.type
+      if block.type.indexOf('woodendoor') >= 0 or block.type.indexOf('irondoor') >= 0
+        blockAbove = @getBlockInfo [ p[0], p[1]+1, p[2] ] 
+        if blockAbove?.s? and blockAbove.type is block.type
+          blockType = block.type + 'bottom'
+        else
+          blockType = block.type + 'top'
+      if not @special[blockType]?
+        @special[blockType] = []
+      @special[blockType].push calcPoint(p, this.options)
       console.log @special
     else
       #front face

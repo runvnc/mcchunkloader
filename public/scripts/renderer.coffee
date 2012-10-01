@@ -95,6 +95,25 @@ class RegionRenderer
         pointLight.position.set coords[0],coords[1],coords[2]
         @scene.add pointLight
 
+  addDoor: (coord, isTop) =>
+    plane = new THREE.PlaneGeometry(1.0,1.0,1.0)
+    if not isTop
+      uv = chunkview.typeToCoords blockInfo['_64']
+    else
+      uv = chunkview.typeToCoords blockInfo['_64x']
+    uvs = []
+    plane.faceVertexUvs = [ [] ]
+    plane.faceVertexUvs[0].push [
+      new THREE.UV( uv[6], uv[7] )
+      new THREE.UV( uv[0], uv[1] )
+      new THREE.UV( uv[2], uv[3] )
+      new THREE.UV( uv[4], uv[5] )
+    ]
+    material = @loadTexture '/terrain.png'
+    mesh = new THREE.Mesh(plane, material)
+    mesh.position.set coord[0], coord[1], coord[2]
+    @scene.add mesh
+
   addPane: (coord) =>
     cube = new THREE.CubeGeometry(1.0, 1.0, 1.0)
     uv = chunkview.typeToCoords blockInfo['_20']
@@ -112,13 +131,22 @@ class RegionRenderer
     mesh.position.set coord[0], coord[1], coord[2]
     @scene.add mesh
 
-  addPanes: (view) =>    
+  addSpecial: (view) =>
     if view.special['glasspane']?
+      console.log 'view special is '
+      console.log view.special
+      
       for coords in view.special.glasspane
         @addPane coords
     if view.special['glass']?
       for coords in view.special.glass
         @addPane coords
+    if view.special['woodendoortop']?
+      for coords in view.special.woodendoortop
+        @addDoor coords, true
+    if view.special['woodendoorbottom']?
+      for coords in view.special.woodendoorbottom
+        @addDoor coords, false
 
   mcCoordsToWorld: (x, y, z) =>
     chunkX = (Math.floor(x/16)).mod(32)
@@ -161,7 +189,7 @@ class RegionRenderer
       console.log 'view is '
       console.log view
     @addTorches view
-    @addPanes view
+    @addSpecial view    
     vertexIndexArray = new Uint16Array(view.indices.length)
     for i in [0...view.indices.length]
       vertexIndexArray[i] = view.indices[i]

@@ -36,6 +36,8 @@ blockInfo = {
  '_53':{id:53,  type:'woodstairs',  rgba: [0.38,0.20,0.20,1.0], t:[4,0]},
  '_56':{id:56,  type:'diamond',     rgba :[43,199,172,1.0], t:[2,3]},
  '_60':{id:60,  type:'farmland',    rgba: [0,0,0,1.0],      t:[6,5]},
+ '_64':{id:64,  type:'woodendoor',  rgba: [0,0,0,1.0],      t:[1,6],      s:1},
+ '_64x':{id:64, type:'woodendoor',  rgba: [0,0,0,1.0],      t:[1,5],      s:1},
  '_67':{id:67,  type:'cobblestairs',rgba :[84,94,88,240],       t:[0,1]},
  #'_73':{id:73,  type:'redstone',    rgba:[1.0,0.1,0.1,1.0]},
  '_78':{id:78,  type:'snow',        rgba:[0.98,0.98,0.98,1.0],  t:[2,4]},

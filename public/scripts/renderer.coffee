@@ -89,16 +89,40 @@ class RegionRenderer
  
     
   addTorches: (view) =>
-    for coords in view.torches
-      pointLight = new THREE.PointLight(0xFFFFAA, 1.0, 15)
-      pointLight.position.set coords[0],coords[1],coords[2]
-      @scene.add pointLight
+    if view.special['torch']?
+      for coords in view.special.torch        
+        pointLight = new THREE.PointLight(0xFFFFAA, 1.0, 15)
+        pointLight.position.set coords[0],coords[1],coords[2]
+        @scene.add pointLight
+
+  addPane: (coord) =>
+    cube = new THREE.CubeGeometry(1.0, 1.0, 1.0)
+    uv = chunkview.typeToCoords blockInfo['_20']
+    uvs = []
+    cube.faceVertexUvs = [ [] ]
+    for i in [0..5]
+      cube.faceVertexUvs[0].push [
+        new THREE.UV( uv[0], uv[1] )
+        new THREE.UV( uv[2], uv[3] )
+        new THREE.UV( uv[4], uv[5] )
+        new THREE.UV( uv[6], uv[7] )
+      ]
+    material = @loadTexture '/terrain.png'
+    mesh = new THREE.Mesh(cube, material)
+    mesh.position.set coord[0], coord[1], coord[2]
+    @scene.add mesh
+
+  addPanes: (view) =>    
+    if view.special['glasspane']?
+      for coords in view.special.glasspane
+        @addPane coords
+    if view.special['glass']?
+      for coords in view.special.glass
+        @addPane coords
 
   mcCoordsToWorld: (x, y, z) =>
     chunkX = (Math.floor(x/16)).mod(32)
     chunkZ = (Math.floor(z/16)).mod(32)
-    #if x < 0 then chunkX = 32 - chunkX
-    #if z < 0 then chunkZ = 32 - chunkZ
     posX = (x.mod(32 * 16)).mod(16)
     posZ = (z.mod(32 * 16)).mod(16)
 
@@ -129,13 +153,15 @@ class RegionRenderer
       view.extractChunk()
     catch e
       console.log "Error in extractChunk"
-      console.log e
+      console.log e.message
+      console.log e.stack
     if view.vertices.length is 0
       console.log "(#{chunkX}, #{chunkZ}) is blank. chunk is "
       console.log chunk
       console.log 'view is '
       console.log view
     @addTorches view
+    @addPanes view
     vertexIndexArray = new Uint16Array(view.indices.length)
     for i in [0...view.indices.length]
       vertexIndexArray[i] = view.indices[i]
@@ -188,11 +214,11 @@ class RegionRenderer
 
   loadTexture: (path) =>
     if @textures[path] then return @textures[path]
-    image = new Image()
-    image.onload = -> texture.needsUpdate = true
-    image.src = path
-    texture  = new THREE.Texture( image,  new THREE.UVMapping(), THREE.ClampToEdgeWrapping , THREE.ClampToEdgeWrapping , THREE.NearestFilter, THREE.NearestFilter )    
-    @textures[path] = new THREE.MeshLambertMaterial( { map: texture, transparent: false} )
+    @image = new Image()
+    @image.onload = -> texture.needsUpdate = true
+    @image.src = path
+    texture  = new THREE.Texture( @image,  new THREE.UVMapping(), THREE.ClampToEdgeWrapping , THREE.ClampToEdgeWrapping , THREE.NearestFilter, THREE.NearestMipMapNearestFilter )    
+    @textures[path] = new THREE.MeshLambertMaterial( { map: texture, transparent: true} )
     return @textures[path]
 
   load: =>
@@ -204,9 +230,7 @@ class RegionRenderer
     minz = camPos.chunkZ - size
     maxx = camPos.chunkX + size
     maxz = camPos.chunkZ + size
-    #@camera.position.x = camPos.x
-    #@camera.position.y = camPos.y
-    #@camera.position.z = camPos.z
+
     controls.getObject().position.x = camPos.x
     controls.getObject().position.y = camPos.y
     controls.getObject().position.z = camPos.z
@@ -234,21 +258,18 @@ class RegionRenderer
 
     @objects = []
 
-    @camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 1500 )
-   
-    #@camera.position.z = 50
-    #@camera.position.y = 25
-    
+    @camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 1500 )
+      
     @scene = new THREE.Scene()
 
-    @scene.add new THREE.AmbientLight(0x333333)
-    pointLight = new THREE.PointLight(0x332222)
+    @scene.add new THREE.AmbientLight(0x111111)
+    pointLight = new THREE.PointLight(0x221111, 1, 800)
     pointLight.position.set( 400, 100, 600 ) 
     @scene.add pointLight
 
-    #@pointLight = new THREE.PointLight(0xddcccc, 1, 1500)
-    #@pointLight.position.set(0,250,0)
-    #@scene.add @pointLight
+    @pointLight = new THREE.PointLight(0x887777, 1, 18.0)
+    @pointLight.position.set(0,250,0)
+    @scene.add @pointLight
 
     @renderer = new THREE.WebGLRenderer({  antialias	: true })
  
@@ -258,9 +279,6 @@ class RegionRenderer
 
     controls = new PointerLockControls( @camera )
     @scene.add controls.getObject()
-    #controls.movementSpeed = 20
-    #@controls.lookSpeed = 0.125
-    #@controls.lookVertical = true
 
     @ray = new THREE.Ray()
     @ray.direction.set( 0, -1, 0 )
@@ -294,6 +312,7 @@ class RegionRenderer
     #   d = 1
     ##  distance = intersections[0].distance
     #  controls.isOnObject true  if distance > 0 and distance < 1
+    @pointLight.position.set controls.getObject().position.x, controls.getObject().position.y, controls.getObject().position.z
 
     @render()
     @stats.update()

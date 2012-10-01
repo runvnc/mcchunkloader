@@ -14,12 +14,22 @@ calcOpts = {}
 
 times = 0
 
-calcPoint = (pos, opts) =>
+calcPoint = (pos, opts) ->
   verts = []
   verts.push pos[0] + opts.chunkX * 16 * 1.00000
   verts.push (pos[1] + 1) * 1.0
   verts.push pos[2] + opts.chunkZ * 16 * 1.00000
   verts
+
+typeToCoords = (type) ->
+  if type.t?
+    x = type.t[0]
+    y = 15 - type.t[1]
+    s = 0.000000000 # -0.0001
+    return [x / 16.0+s, y / 16.0+s, (x + 1.0) / 16.0-s, y / 16.0+s, (x + 1.0) / 16.0-s, (y + 1.0) / 16.0-s, x / 16.0+s, (y + 1.0) / 16.0-s]
+  else
+    return [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
 
 class ChunkView
   constructor: (@options, @indices, @vertices) -> 
@@ -31,6 +41,8 @@ class ChunkView
     @rotcent = true
     @filled = []
     @nomatch = {}
+    @special = {}
+   
     if @options.ymin? then @ymin = @options.ymin else @ymin = 60
     if @options.superflat? is 'true' then @options.superflat = true
     if @options.superflat? then @superflat = @options.superflat else @superflat = false
@@ -171,8 +183,12 @@ class ChunkView
   addTexturedBlock: (p) =>
     a = p
     block = @getBlockInfo(p)
-    if block.id is 50
-      @torches.push calcPoint(p, this.options)
+    if block?.s?
+      if not @special[block.type]?
+        @special[block.type] = []
+      @special[block.type].push calcPoint(p, this.options)
+      console.log 'added ' + block.type
+      console.log @special
     else
       #front face
       @addCubePoint a, -1.0, -1.0, 1.0
@@ -219,20 +235,10 @@ class ChunkView
     
     @vertices.push p3[0]
     @vertices.push p3[1]
-    @vertices.push p3[2]
-   
-
-  typeToCoords: (type) =>
-    if type.t?
-      x = type.t[0]
-      y = 15 - type.t[1]
-      s = 0.0 # -0.0001
-      return [x / 16.0+s, y / 16.0+s, (x + 1.0) / 16.0-s, y / 16.0+s, (x + 1.0) / 16.0-s, (y + 1.0) / 16.0-s, x / 16.0+s, (y + 1.0) / 16.0-s]
-    else
-      return [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    @vertices.push p3[2]   
 
   addFaces: (i, bl, p) =>
-    coords = @typeToCoords(bl)
+    coords = typeToCoords(bl)
     show = {}
     coordsfront = coords
     coordsback = coords
@@ -262,7 +268,7 @@ class ChunkView
 
     if bl.id is 2
       dirtgrass = blockInfo['_2x']      
-      coordsfront = @typeToCoords(dirtgrass)
+      coordsfront = typeToCoords(dirtgrass)
       coordsback = coordsfront
       coordsleft = coordsfront
       coordsright = coordsfront
@@ -339,4 +345,5 @@ class ChunkView
   
 exports.ChunkView = ChunkView
 exports.calcPoint = calcPoint
+exports.typeToCoords = typeToCoords
 

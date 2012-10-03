@@ -47,6 +47,9 @@
       this.loadTexture = __bind(this.loadTexture, this);
       this.loadChunk = __bind(this.loadChunk, this);
       this.mcCoordsToWorld = __bind(this.mcCoordsToWorld, this);
+      this.addSpecial = __bind(this.addSpecial, this);
+      this.addPane = __bind(this.addPane, this);
+      this.addDoor = __bind(this.addDoor, this);
       this.addTorches = __bind(this.addTorches, this);
       if (this.options.y < 50) this.options.superflat = true;
       this.mouseX = 0;
@@ -111,15 +114,85 @@
 
     RegionRenderer.prototype.addTorches = function(view) {
       var coords, pointLight, _i, _len, _ref, _results;
-      _ref = view.torches;
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        coords = _ref[_i];
-        pointLight = new THREE.PointLight(0xFFFFAA, 1.0, 15);
-        pointLight.position.set(coords[0], coords[1], coords[2]);
-        _results.push(this.scene.add(pointLight));
+      if (view.special['torch'] != null) {
+        _ref = view.special.torch;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          coords = _ref[_i];
+          pointLight = new THREE.PointLight(0xFFFFAA, 1.0, 15);
+          pointLight.position.set(coords[0], coords[1], coords[2]);
+          _results.push(this.scene.add(pointLight));
+        }
+        return _results;
       }
-      return _results;
+    };
+
+    RegionRenderer.prototype.addDoor = function(coord, isTop) {
+      var material, mesh, plane, uv, uvs;
+      plane = new THREE.PlaneGeometry(1.0, 1.0, 1.0);
+      if (!isTop) {
+        uv = chunkview.typeToCoords(blockInfo['_64']);
+      } else {
+        uv = chunkview.typeToCoords(blockInfo['_64x']);
+      }
+      uvs = [];
+      plane.faceVertexUvs = [[]];
+      plane.faceVertexUvs[0].push([new THREE.UV(uv[6], uv[7]), new THREE.UV(uv[0], uv[1]), new THREE.UV(uv[2], uv[3]), new THREE.UV(uv[4], uv[5])]);
+      material = this.loadTexture('/terrain.png');
+      mesh = new THREE.Mesh(plane, material);
+      mesh.position.set(coord[0], coord[1], coord[2]);
+      return this.scene.add(mesh);
+    };
+
+    RegionRenderer.prototype.addPane = function(coord) {
+      var cube, i, material, mesh, uv, uvs;
+      cube = new THREE.CubeGeometry(1.0, 1.0, 1.0);
+      uv = chunkview.typeToCoords(blockInfo['_20']);
+      uvs = [];
+      cube.faceVertexUvs = [[]];
+      for (i = 0; i <= 5; i++) {
+        cube.faceVertexUvs[0].push([new THREE.UV(uv[0], uv[1]), new THREE.UV(uv[2], uv[3]), new THREE.UV(uv[4], uv[5]), new THREE.UV(uv[6], uv[7])]);
+      }
+      material = this.loadTexture('/terrain.png');
+      mesh = new THREE.Mesh(cube, material);
+      mesh.position.set(coord[0], coord[1], coord[2]);
+      return this.scene.add(mesh);
+    };
+
+    RegionRenderer.prototype.addSpecial = function(view) {
+      var coords, _i, _j, _k, _l, _len, _len2, _len3, _len4, _ref, _ref2, _ref3, _ref4, _results;
+      if (view.special['glasspane'] != null) {
+        console.log('view special is ');
+        console.log(view.special);
+        _ref = view.special.glasspane;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          coords = _ref[_i];
+          this.addPane(coords);
+        }
+      }
+      if (view.special['glass'] != null) {
+        _ref2 = view.special.glass;
+        for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+          coords = _ref2[_j];
+          this.addPane(coords);
+        }
+      }
+      if (view.special['woodendoortop'] != null) {
+        _ref3 = view.special.woodendoortop;
+        for (_k = 0, _len3 = _ref3.length; _k < _len3; _k++) {
+          coords = _ref3[_k];
+          this.addDoor(coords, true);
+        }
+      }
+      if (view.special['woodendoorbottom'] != null) {
+        _ref4 = view.special.woodendoorbottom;
+        _results = [];
+        for (_l = 0, _len4 = _ref4.length; _l < _len4; _l++) {
+          coords = _ref4[_l];
+          _results.push(this.addDoor(coords, false));
+        }
+        return _results;
+      }
     };
 
     RegionRenderer.prototype.mcCoordsToWorld = function(x, y, z) {
@@ -147,7 +220,7 @@
     };
 
     RegionRenderer.prototype.loadChunk = function(chunk, chunkX, chunkZ) {
-      var attributes, centerX, centerY, centerZ, geometry, i, material, mesh, options, uvArray, vertexIndexArray, vertexPositionArray, view, _ref, _ref2, _ref3;
+      var attributes, colorArray, geometry, i, material, mesh, options, uvArray, vertexIndexArray, vertexPositionArray, view, _ref, _ref2, _ref3, _ref4;
       options = {
         nbt: chunk,
         ymin: this.options.ymin,
@@ -161,7 +234,8 @@
         view.extractChunk();
       } catch (e) {
         console.log("Error in extractChunk");
-        console.log(e);
+        console.log(e.message);
+        console.log(e.stack);
       }
       if (view.vertices.length === 0) {
         console.log("(" + chunkX + ", " + chunkZ + ") is blank. chunk is ");
@@ -170,6 +244,7 @@
         console.log(view);
       }
       this.addTorches(view);
+      this.addSpecial(view);
       vertexIndexArray = new Uint16Array(view.indices.length);
       for (i = 0, _ref = view.indices.length; 0 <= _ref ? i < _ref : i > _ref; 0 <= _ref ? i++ : i--) {
         vertexIndexArray[i] = view.indices[i];
@@ -178,8 +253,12 @@
       for (i = 0, _ref2 = view.vertices.length; 0 <= _ref2 ? i < _ref2 : i > _ref2; 0 <= _ref2 ? i++ : i--) {
         vertexPositionArray[i] = view.vertices[i];
       }
+      colorArray = new Float32Array(view.colors.length);
+      for (i = 0, _ref3 = view.colors.length; 0 <= _ref3 ? i < _ref3 : i > _ref3; 0 <= _ref3 ? i++ : i--) {
+        colorArray[i] = view.colors[i];
+      }
       uvArray = new Float32Array(view.textcoords.length);
-      for (i = 0, _ref3 = view.textcoords.length; 0 <= _ref3 ? i < _ref3 : i > _ref3; 0 <= _ref3 ? i++ : i--) {
+      for (i = 0, _ref4 = view.textcoords.length; 0 <= _ref4 ? i < _ref4 : i > _ref4; 0 <= _ref4 ? i++ : i--) {
         uvArray[i] = view.textcoords[i];
       }
       attributes = {
@@ -192,6 +271,11 @@
           itemSize: 3,
           array: vertexPositionArray,
           numItems: vertexPositionArray.length / 3
+        },
+        color: {
+          itemSize: 3,
+          array: colorArray,
+          numItems: colorArray / 3
         },
         uv: {
           itemSize: 2,
@@ -215,25 +299,27 @@
       mesh = new THREE.Mesh(geometry, material);
       this.scene.add(mesh);
       this.objects.push(mesh);
-      centerX = mesh.position.x + 0.5 * (geometry.boundingBox.max.x - geometry.boundingBox.min.x);
-      centerY = mesh.position.y + 0.5 * (geometry.boundingBox.max.y - geometry.boundingBox.min.y);
-      centerZ = mesh.position.z + 0.5 * (geometry.boundingBox.max.z - geometry.boundingBox.min.z);
+      this.centerX = mesh.position.x + 0.5 * (geometry.boundingBox.max.x - geometry.boundingBox.min.x);
+      this.centerY = mesh.position.y + 0.5 * (geometry.boundingBox.max.y - geometry.boundingBox.min.y);
+      this.centerZ = mesh.position.z + 0.5 * (geometry.boundingBox.max.z - geometry.boundingBox.min.z);
       this.camera.lookAt(mesh.position);
       return null;
     };
 
     RegionRenderer.prototype.loadTexture = function(path) {
-      var image, texture;
+      var texture;
       if (this.textures[path]) return this.textures[path];
-      image = new Image();
-      image.onload = function() {
+      this.image = new Image();
+      this.image.onload = function() {
         return texture.needsUpdate = true;
       };
-      image.src = path;
-      texture = new THREE.Texture(image, new THREE.UVMapping(), THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.NearestFilter, THREE.NearestFilter);
+      this.image.src = path;
+      texture = new THREE.Texture(this.image, new THREE.UVMapping(), THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.NearestFilter, THREE.NearestMipMapNearestFilter);
       this.textures[path] = new THREE.MeshLambertMaterial({
         map: texture,
-        transparent: false
+        transparent: true,
+        perPixel: true,
+        vertexColors: THREE.VertexColors
       });
       return this.textures[path];
     };
@@ -290,14 +376,16 @@
       container = document.createElement('div');
       document.body.appendChild(container);
       this.objects = [];
-      this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1500);
+      this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1500);
       this.scene = new THREE.Scene();
-      this.scene.add(new THREE.AmbientLight(0x333333));
-      pointLight = new THREE.PointLight(0x332222);
-      pointLight.position.set(400, 100, 600);
+      this.scene.add(new THREE.AmbientLight(0x111111));
+      pointLight = new THREE.PointLight(0xccbbbb, 1, 2800);
+      pointLight.position.set(400, 400, 600);
       this.scene.add(pointLight);
       this.renderer = new THREE.WebGLRenderer({
-        antialias: true
+        antialias: true,
+        clearAlpha: 0x6D839C,
+        alpha: true
       });
       this.renderer.setClearColorHex(0x6D839C, 1);
       this.renderer.setSize(window.innerWidth, window.innerHeight);

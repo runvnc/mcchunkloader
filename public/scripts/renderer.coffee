@@ -198,6 +198,10 @@ class RegionRenderer
     for i in [0...view.vertices.length]
       vertexPositionArray[i] = view.vertices[i]
 
+    colorArray = new Float32Array(view.colors.length)
+    for i in [0...view.colors.length]
+      colorArray[i] = view.colors[i]
+
     uvArray = new Float32Array(view.textcoords.length)
     for i in [0...view.textcoords.length]
       uvArray[i] = view.textcoords[i]
@@ -211,10 +215,15 @@ class RegionRenderer
         itemSize: 3
         array: vertexPositionArray
         numItems: vertexPositionArray.length / 3
+      color:
+        itemSize: 3
+        array: colorArray
+        numItems: colorArray / 3      
       uv:
         itemSize: 2
         array: uvArray
         numItems: uvArray.length / 2
+      
 
     geometry = new THREE.BufferGeometry()
     geometry.attributes = attributes
@@ -234,9 +243,9 @@ class RegionRenderer
     #mesh.doubleSided = true
     @scene.add mesh
     @objects.push mesh
-    centerX = mesh.position.x + 0.5 * ( geometry.boundingBox.max.x - geometry.boundingBox.min.x )
-    centerY = mesh.position.y + 0.5 * ( geometry.boundingBox.max.y - geometry.boundingBox.min.y )
-    centerZ = mesh.position.z + 0.5 * ( geometry.boundingBox.max.z - geometry.boundingBox.min.z )
+    @centerX = mesh.position.x + 0.5 * ( geometry.boundingBox.max.x - geometry.boundingBox.min.x )
+    @centerY = mesh.position.y + 0.5 * ( geometry.boundingBox.max.y - geometry.boundingBox.min.y )
+    @centerZ = mesh.position.z + 0.5 * ( geometry.boundingBox.max.z - geometry.boundingBox.min.z )
     @camera.lookAt mesh.position
     return null
 
@@ -246,7 +255,7 @@ class RegionRenderer
     @image.onload = -> texture.needsUpdate = true
     @image.src = path
     texture  = new THREE.Texture( @image,  new THREE.UVMapping(), THREE.ClampToEdgeWrapping , THREE.ClampToEdgeWrapping , THREE.NearestFilter, THREE.NearestMipMapNearestFilter )    
-    @textures[path] = new THREE.MeshLambertMaterial( { map: texture, transparent: true} )
+    @textures[path] = new THREE.MeshLambertMaterial( { map: texture, transparent: true, perPixel: true, vertexColors: THREE.VertexColors } )
     return @textures[path]
 
   load: =>
@@ -291,15 +300,15 @@ class RegionRenderer
     @scene = new THREE.Scene()
 
     @scene.add new THREE.AmbientLight(0x111111)
-    pointLight = new THREE.PointLight(0x221111, 1, 800)
-    pointLight.position.set( 400, 100, 600 ) 
+    pointLight = new THREE.PointLight(0xccbbbb, 1, 2800)
+    pointLight.position.set( 400, 400, 600 ) 
     @scene.add pointLight
 
-    @pointLight = new THREE.PointLight(0x887777, 1, 18.0)
-    @pointLight.position.set(0,250,0)
-    @scene.add @pointLight
+    #@pointLight = new THREE.PointLight(0x887777, 1, 18.0)
+    #@pointLight.position.set(0,250,0)
+    #@scene.add @pointLight
 
-    @renderer = new THREE.WebGLRenderer({  antialias	: true })
+    @renderer = new THREE.WebGLRenderer({ antialias	: true, clearAlpha: 0x6D839C, alpha: true  })
  
     @renderer.setClearColorHex( 0x6D839C, 1 )
     @renderer.setSize window.innerWidth, window.innerHeight
@@ -340,7 +349,7 @@ class RegionRenderer
     #   d = 1
     ##  distance = intersections[0].distance
     #  controls.isOnObject true  if distance > 0 and distance < 1
-    @pointLight.position.set controls.getObject().position.x, controls.getObject().position.y, controls.getObject().position.z
+    #@pointLight.position.set controls.getObject().position.x, controls.getObject().position.y, controls.getObject().position.z
 
     @render()
     @stats.update()

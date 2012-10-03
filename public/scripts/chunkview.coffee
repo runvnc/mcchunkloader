@@ -66,8 +66,28 @@ class ChunkView
     for section in sections
       if section isnt undefined and section.Y * 1 is sectionnum * 1   
         return section.Blocks[blockpos]
-    @nomatch[y] = true    
     return -1
+
+  getLightAt: (x, y, z) =>
+    if @nbt.root.Level.Sections?
+      sections = @nbt.root.Level.Sections
+    else
+      sections = @nbt.root.Sections
+    if not sections then return -1
+
+    sectionnum = Math.floor( (y / 16) )
+    offset = ((y%16)*256) + (z * 16) + x
+
+    for section in sections
+      if section isnt undefined and section.Y * 1 is sectionnum * 1   
+        if offset % 2 == 0          
+          return section.SkyLight[Math.floor(offset/2)] & 0x0F + 
+                 section.BlockLight[Math.floor(offset/2)] & 0x0F
+        else          
+          return (section.SkyLight[Math.floor(offset/2)] >> 4 ) & 0x0F +
+                 (section.BlockLight[Math.floor(offset/2)] >> 4 ) & 0x0F
+    return -1
+
 
   transNeighbors: (x, y, z) =>
     for i in [x-1..x+1] 
@@ -317,7 +337,11 @@ class ChunkView
     #if show.left
     @textcoords.push.apply @textcoords, coordsleft
 
-    clr = [ bl.rgba[0], bl.rgba[1], bl.rgba[2]]
+    #clr = [ bl.rgba[0], bl.rgba[1], bl.rgba[2] ]
+    light = @getLightAt p[0], p[1], p[2]
+    light = 0.7 + light / 8.0
+    clr = [ light, light, light ]
+    console.log clr
 
     @colors.push.apply @colors, clr
     @colors.push.apply @colors, clr

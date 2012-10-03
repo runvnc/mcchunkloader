@@ -1,6 +1,5 @@
 (function() {
-  var ChunkSizeX, ChunkSizeY, ChunkSizeZ, ChunkView, blockInfo, calcOpts, calcPoint, cubeCount, exports, require, times,
-    _this = this,
+  var ChunkSizeX, ChunkSizeY, ChunkSizeZ, ChunkView, blockInfo, calcOpts, calcPoint, cubeCount, exports, require, times, typeToCoords,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   if (typeof window !== "undefined" && window !== null) {
@@ -31,6 +30,18 @@
     return verts;
   };
 
+  typeToCoords = function(type) {
+    var s, x, y;
+    if (type.t != null) {
+      x = type.t[0];
+      y = 15 - type.t[1];
+      s = 0.000000000;
+      return [x / 16.0 + s, y / 16.0 + s, (x + 1.0) / 16.0 - s, y / 16.0 + s, (x + 1.0) / 16.0 - s, (y + 1.0) / 16.0 - s, x / 16.0 + s, (y + 1.0) / 16.0 - s];
+    } else {
+      return [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+    }
+  };
+
   ChunkView = (function() {
 
     function ChunkView(options, indices, vertices) {
@@ -38,7 +49,6 @@
       this.indices = indices;
       this.vertices = vertices;
       this.addFaces = __bind(this.addFaces, this);
-      this.typeToCoords = __bind(this.typeToCoords, this);
       this.addCubePoint = __bind(this.addCubePoint, this);
       this.addTexturedBlock = __bind(this.addTexturedBlock, this);
       this.hasNeighbor = __bind(this.hasNeighbor, this);
@@ -49,6 +59,7 @@
       this.addBlock = __bind(this.addBlock, this);
       this.extractChunk = __bind(this.extractChunk, this);
       this.transNeighbors = __bind(this.transNeighbors, this);
+      this.getLightAt = __bind(this.getLightAt, this);
       this.getBlockAt = __bind(this.getBlockAt, this);
       this.nbt = options.nbt;
       this.pos = options.pos;
@@ -58,6 +69,7 @@
       this.rotcent = true;
       this.filled = [];
       this.nomatch = {};
+      this.special = {};
       if (this.options.ymin != null) {
         this.ymin = this.options.ymin;
       } else {
@@ -99,7 +111,29 @@
           return section.Blocks[blockpos];
         }
       }
-      this.nomatch[y] = true;
+      return -1;
+    };
+
+    ChunkView.prototype.getLightAt = function(x, y, z) {
+      var offset, section, sectionnum, sections, _i, _len;
+      if (this.nbt.root.Level.Sections != null) {
+        sections = this.nbt.root.Level.Sections;
+      } else {
+        sections = this.nbt.root.Sections;
+      }
+      if (!sections) return -1;
+      sectionnum = Math.floor(y / 16);
+      offset = ((y % 16) * 256) + (z * 16) + x;
+      for (_i = 0, _len = sections.length; _i < _len; _i++) {
+        section = sections[_i];
+        if (section !== void 0 && section.Y * 1 === sectionnum * 1) {
+          if (offset % 2 === 0) {
+            return section.SkyLight[Math.floor(offset / 2)] & 0x0F + section.BlockLight[Math.floor(offset / 2)] & 0x0F;
+          } else {
+            return (section.SkyLight[Math.floor(offset / 2)] >> 4) & 0x0F + (section.BlockLight[Math.floor(offset / 2)] >> 4) & 0x0F;
+          }
+        }
+      }
       return -1;
     };
 
@@ -240,11 +274,22 @@
     };
 
     ChunkView.prototype.addTexturedBlock = function(p) {
-      var a, block;
+      var a, block, blockAbove, blockType;
       a = p;
       block = this.getBlockInfo(p);
-      if (block.id === 50) {
-        return this.torches.push(calcPoint(p, this.options));
+      blockType = block.type;
+      if ((block != null ? block.s : void 0) != null) {
+        if (block.type.indexOf('woodendoor') >= 0 || block.type.indexOf('irondoor') >= 0) {
+          blockAbove = this.getBlockInfo([p[0], p[1] + 1, p[2]]);
+          if (((blockAbove != null ? blockAbove.s : void 0) != null) && blockAbove.type === block.type) {
+            blockType = block.type + 'bottom';
+          } else {
+            blockType = block.type + 'top';
+          }
+        }
+        if (!(this.special[blockType] != null)) this.special[blockType] = [];
+        this.special[blockType].push(calcPoint(p, this.options));
+        return console.log(this.special);
       } else {
         this.addCubePoint(a, -1.0, -1.0, 1.0);
         this.addCubePoint(a, 1.0, -1.0, 1.0);
@@ -285,21 +330,9 @@
       return this.vertices.push(p3[2]);
     };
 
-    ChunkView.prototype.typeToCoords = function(type) {
-      var s, x, y;
-      if (type.t != null) {
-        x = type.t[0];
-        y = 15 - type.t[1];
-        s = 0.0;
-        return [x / 16.0 + s, y / 16.0 + s, (x + 1.0) / 16.0 - s, y / 16.0 + s, (x + 1.0) / 16.0 - s, (y + 1.0) / 16.0 - s, x / 16.0 + s, (y + 1.0) / 16.0 - s];
-      } else {
-        return [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-      }
-    };
-
     ChunkView.prototype.addFaces = function(i, bl, p) {
-      var clr, coords, coordsback, coordsbottom, coordsfront, coordsleft, coordsright, coordstop, dirtgrass, show, totfaces, _ref;
-      coords = this.typeToCoords(bl);
+      var clr, coords, coordsback, coordsbottom, coordsfront, coordsleft, coordsright, coordstop, dirtgrass, light, show, totfaces, _ref;
+      coords = typeToCoords(bl);
       show = {};
       coordsfront = coords;
       coordsback = coords;
@@ -326,7 +359,7 @@
       }
       if (bl.id === 2) {
         dirtgrass = blockInfo['_2x'];
-        coordsfront = this.typeToCoords(dirtgrass);
+        coordsfront = typeToCoords(dirtgrass);
         coordsback = coordsfront;
         coordsleft = coordsfront;
         coordsright = coordsfront;
@@ -363,7 +396,10 @@
       this.textcoords.push.apply(this.textcoords, coordsbottom);
       this.textcoords.push.apply(this.textcoords, coordsright);
       this.textcoords.push.apply(this.textcoords, coordsleft);
-      clr = [bl.rgba[0], bl.rgba[1], bl.rgba[2]];
+      light = this.getLightAt(p[0], p[1], p[2]);
+      light = 0.7 + light / 8.0;
+      clr = [light, light, light];
+      console.log(clr);
       this.colors.push.apply(this.colors, clr);
       this.colors.push.apply(this.colors, clr);
       this.colors.push.apply(this.colors, clr);
@@ -397,5 +433,7 @@
   exports.ChunkView = ChunkView;
 
   exports.calcPoint = calcPoint;
+
+  exports.typeToCoords = typeToCoords;
 
 }).call(this);

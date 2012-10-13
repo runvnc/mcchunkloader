@@ -30,9 +30,20 @@ typeToCoords = (type) ->
   else
     return [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
+typeToCoords2 = (type) ->
+  if type.t?
+    x = type.t[0]
+    y = 15 - type.t[1]
+    s = 0.000000000 # -0.0001
+    return [x / 16.0, y / 16.0, (x + 1.0) / 16.0, y / 16.0, (x + 1.0) / 16.0, (y + 1.0) / 16.0,
+            x / 16.0, y / 16.0, (x + 1.0) / 16.0, (y + 1.0) / 16.0, x / 16.0, (y + 1.0) / 16.0]
+  else
+    return [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
 
 class ChunkView
   constructor: (@options, @indices, @vertices) -> 
+    @index = 0
     @nbt = options.nbt
     @pos = options.pos
     @torches = []
@@ -47,9 +58,6 @@ class ChunkView
     if @options.superflat? is 'true' then @options.superflat = true
     if @options.superflat? then @superflat = @options.superflat else @superflat = false
     if @options.showstuff? then @showStuff = @options.showstuff else @showStuff = 'diamondsmoss'    
-    console.log 'superflat is ' + @superflat
-    console.log 'showStuff is ' + @showStuff
-    console.log 'ymin is ' + @ymin
     
     if options.ymin? then @ymin = options.ymin
   
@@ -81,11 +89,9 @@ class ChunkView
     for section in sections
       if section isnt undefined and section.Y * 1 is sectionnum * 1   
         if offset % 2 == 0          
-          return section.SkyLight[Math.floor(offset/2)] & 0x0F + 
-                 section.BlockLight[Math.floor(offset/2)] & 0x0F
+          return section.BlockLight[Math.floor(offset/2)] & 0x0F
         else          
-          return (section.SkyLight[Math.floor(offset/2)] >> 4 ) & 0x0F +
-                 (section.BlockLight[Math.floor(offset/2)] >> 4 ) & 0x0F
+          return (section.BlockLight[Math.floor(offset/2)] >> 4 ) & 0x0F
     return -1
 
 
@@ -110,6 +116,7 @@ class ChunkView
     @textcoords = []
     @filled = []
     @cubeCount = 0
+    
     if @nbt.root.Level.Sections?
       sections = @nbt.root.Level.Sections
     else
@@ -150,8 +157,6 @@ class ChunkView
                 @addBlock [x,y,z]
               else
                 blah = 1
-                      
-
     @renderPoints()
 
   addBlock: (position) =>
@@ -189,16 +194,19 @@ class ChunkView
     t.rgba
 
   hasNeighbor: (bl, p, offset0, offset1, offset2) =>
-    return false
+    if @showStuff is 'diamondsmoss' and p[1] < 62 then return false
+    if p[0] is 0 or p[0] is 15 or p[2] is 0 or p[2] is 15
+      return false
     n = [p[0] + offset0, p[1] + offset1, p[2] + offset2]   
     id = @getBlockAt n[0], n[1], n[2]
-    if id is 1 or id is 2 then return true else return false
-    if not id? or id? < 1
-      return false
-    if not (id in [1, 2, 3, 4, 5]) then return false
+    #if id is 1 or id is 2 then return true else return false
+    #if not id? or id? < 1
+    #  return false
+    #if not (id in [1, 2, 3, 4, 5]) then return false
     info = @getBlockType(n[0], n[1], n[2])
     if info.id in [0, 37, 38, 50] then return false
-    return (info? and info?.id > 0 and info.t? and info.t[0] and not (info.id in [37, 38]) ) #or (info?.t? is 8 or info?.t? is 9)
+    return (info? and info?.id > 0 and info.t? and info.t[0]?) # and not (info.id in [37, 38]) ) #or (info?.t? is 8 or info?.t? is 9)
+
 
   addTexturedBlock: (p) =>
     a = p
@@ -215,64 +223,15 @@ class ChunkView
         @special[blockType] = []
       @special[blockType].push calcPoint(p, this.options)
       console.log @special
-    else
-      #front face
-      @addCubePoint a, -1.0, -1.0, 1.0
-      @addCubePoint a, 1.0, -1.0, 1.0
-      @addCubePoint a, 1.0, 1.0, 1.0
-      @addCubePoint a, -1.0, 1.0, 1.0
-      
-      #back face
-      @addCubePoint a, 1.0, -1.0, -1.0
-      @addCubePoint a, -1.0, -1.0, -1.0
-      @addCubePoint a, -1.0, 1.0, -1.0
-      @addCubePoint a, 1.0, 1.0, -1.0
-      
-      #top face
-      @addCubePoint a, -1.0, 1.0, -1.0
-      @addCubePoint a, -1.0, 1.0, 1.0
-      @addCubePoint a, 1.0, 1.0, 1.0
-      @addCubePoint a, 1.0, 1.0, -1.0
-      
-      #bottom face
-      @addCubePoint a, -1.0, -1.0, -1.0
-      @addCubePoint a, 1.0, -1.0, -1.0
-      @addCubePoint a, 1.0, -1.0, 1.0
-      @addCubePoint a, -1.0, -1.0, 1.0
-
-      #right face
-      @addCubePoint a, 1.0, -1.0, 1.0
-      @addCubePoint a, 1.0, -1.0, -1.0     
-      @addCubePoint a, 1.0, 1.0, -1.0     
-      @addCubePoint a, 1.0, 1.0, 1.0
-      
-      #left face    
-      @addCubePoint a, -1.0, -1.0, -1.0
-      @addCubePoint a, -1.0, -1.0, 1.0
-      @addCubePoint a, -1.0, 1.0, 1.0
-      @addCubePoint a, -1.0, 1.0, -1.0
-      @addFaces @cubeCount * 24, block, p #24
-      @cubeCount++
-
-  addCubePoint: (a, xdelta, ydelta, zdelta) =>
-    s = 0.0000000 #xdelta * 0.001
-    p2 = [a[0] + xdelta * 0.5 + s, a[1] + ydelta * 0.5 + s, a[2] + zdelta * 0.5 + s]
-    p3 = calcPoint(p2, this.options)
+    else      
+      for side in ['front','back','top','bottom','right','left']
+        @index = @addFace @index, a, block, p, side      
     
-    @vertices.push p3[0]
-    @vertices.push p3[1]
-    @vertices.push p3[2]   
+      show = @showBlock block, p
+     
 
-  addFaces: (i, bl, p) =>
-    coords = typeToCoords(bl)
+  showBlock: (bl, p) =>
     show = {}
-    coordsfront = coords
-    coordsback = coords
-    coordsleft = coords
-    coordsright = coords
-    coordstop = coords
-    coordsbottom = coords
-
     if bl.id in [37, 38]
       show =
         front: true #false
@@ -288,89 +247,95 @@ class ChunkView
       show.bottom = not (@hasNeighbor(bl, p, 0, -1, 0))
       show.left = not (@hasNeighbor(bl, p, -1, 0, 0))
       show.right = not (@hasNeighbor(bl, p, 1, 0, 0))
-    
-    #if not bl.id in [37,38] and not (show.front or show.back or show.top or show.bottom or show.left or show.right)
-    #  show = { front: true, back: true, top: true, bottom: true, left: true, right: true }
+    show
 
-    if bl.id is 2
+  addCubePoint: (a, xdelta, ydelta, zdelta) =>
+    s = 0.0000000 #xdelta * 0.001
+    p2 = [a[0] + xdelta * 0.5 + s, a[1] + ydelta * 0.5 + s, a[2] + zdelta * 0.5 + s]
+    p3 = calcPoint(p2, this.options)
+    
+    @vertices.push p3[0]
+    @vertices.push p3[1]
+    @vertices.push p3[2]   
+
+  addFace: (i, a, bl, p, side) =>
+    try
+      coords = typeToCoords2(bl)
       dirtgrass = blockInfo['_2x']      
-      coordsfront = typeToCoords(dirtgrass)
-      coordsback = coordsfront
-      coordsleft = coordsfront
-      coordsright = coordsfront
-      coordsbottom = coordsfront
+      facecoords = typeToCoords2(dirtgrass) 
+      show = @showBlock bl, p   
+      if show[side]               
+        switch side
+          when 'front'
+            if bl.id is 2
+              coords = facecoords
+            @addCubePoint a, -1.0, -1.0, 1.0
+            @addCubePoint a, 1.0, -1.0, 1.0
+            @addCubePoint a, 1.0, 1.0, 1.0
+            @addCubePoint a, -1.0, -1.0, 1.0
+            @addCubePoint a, 1.0, 1.0, 1.0
+            @addCubePoint a, -1.0, 1.0, 1.0
+          when 'back'
+            if bl.id is 2
+              coords = facecoords
+            @addCubePoint a, 1.0, -1.0, -1.0
+            @addCubePoint a, -1.0, -1.0, -1.0
+            @addCubePoint a, -1.0, 1.0, -1.0
+            @addCubePoint a, 1.0, -1.0, -1.0
+            @addCubePoint a, -1.0, 1.0, -1.0
+            @addCubePoint a, 1.0, 1.0, -1.0
+          when 'top'      
+            @addCubePoint a, -1.0, 1.0, -1.0
+            @addCubePoint a, -1.0, 1.0, 1.0
+            @addCubePoint a, 1.0, 1.0, 1.0
+            @addCubePoint a, -1.0, 1.0, -1.0
+            @addCubePoint a, 1.0, 1.0, 1.0
+            @addCubePoint a, 1.0, 1.0, -1.0
+          when 'bottom'      
+            if bl.id is 2
+              coords = facecoords
+            @addCubePoint a, -1.0, -1.0, -1.0
+            @addCubePoint a, 1.0, -1.0, -1.0
+            @addCubePoint a, 1.0, -1.0, 1.0
+            @addCubePoint a, -1.0, -1.0, -1.0
+            @addCubePoint a, 1.0, -1.0, 1.0
+            @addCubePoint a, -1.0, -1.0, 1.0
+          when 'right'
+            if bl.id is 2
+              coords = facecoords
+            @addCubePoint a, 1.0, -1.0, 1.0
+            @addCubePoint a, 1.0, -1.0, -1.0     
+            @addCubePoint a, 1.0, 1.0, -1.0
+            @addCubePoint a, 1.0, -1.0, 1.0
+            @addCubePoint a, 1.0, 1.0, -1.0     
+            @addCubePoint a, 1.0, 1.0, 1.0
+          when 'left'   
+            if bl.id is 2
+              coords = facecoords
+            @addCubePoint a, -1.0, -1.0, -1.0
+            @addCubePoint a, -1.0, -1.0, 1.0
+            @addCubePoint a, -1.0, 1.0, 1.0
+            @addCubePoint a, -1.0, -1.0, -1.0
+            @addCubePoint a, -1.0, 1.0, 1.0
+            @addCubePoint a, -1.0, 1.0, -1.0
 
-    totfaces = 0
-    totfaces++  if show.front
-    totfaces++  if show.back
-    totfaces++  if show.top
-    totfaces++  if show.bottom
-    totfaces++  if show.left
-    totfaces++  if show.right
+        @indices.push.apply @indices, [i + 0, i + 1, i + 2, i + 3, i + 4, i + 5]
+          
+        @textcoords.push.apply @textcoords, coords
 
-    #if totfaces > 1 or totfaces < 1
-    #  show = { front: true, back: true, top: true, bottom: true, left: true, right: true }
+        clr = [ 1.0, 1.0, 1.0 ]    
 
-    @indices.push.apply @indices, [i + 0, i + 1, i + 2, i + 0, i + 2, i + 3]  if show.front # Front face
-    @indices.push.apply @indices, [i + 4, i + 5, i + 6, i + 4, i + 6, i + 7]  if show.back # Back face
-    @indices.push.apply @indices, [i + 8, i + 9, i + 10, i + 8, i + 10, i + 11]  if show.top #,  // Top face
-    @indices.push.apply @indices, [i + 12, i + 13, i + 14, i + 12, i + 14, i + 15]  if show.bottom # Bottom face
-    @indices.push.apply @indices, [i + 16, i + 17, i + 18, i + 16, i + 18, i + 19]  if show.right # Right face    
-    @indices.push.apply @indices, [i + 20, i + 21, i + 22, i + 20, i + 22, i + 23]  if show.left #y/ Left face
-    
-    
-    #if show.front
-    @textcoords.push.apply @textcoords, coordsfront
-    
-    #if show.back
-    @textcoords.push.apply @textcoords, coordsback
-    
-    #if show.top
-    @textcoords.push.apply @textcoords, coordstop
-    
-    #if show.bottom 
-    @textcoords.push.apply @textcoords, coordsbottom
-    
-    #if show.right
-    @textcoords.push.apply @textcoords, coordsright
-    
-    #if show.left
-    @textcoords.push.apply @textcoords, coordsleft
+        @colors.push.apply @colors, clr
+        @colors.push.apply @colors, clr
+        @colors.push.apply @colors, clr
+        @colors.push.apply @colors, clr   
+        @colors.push.apply @colors, clr   
+        @colors.push.apply @colors, clr   
 
-    #clr = [ bl.rgba[0], bl.rgba[1], bl.rgba[2] ]
-    light = @getLightAt p[0], p[1], p[2]
-    light = 0.7 + light / 8.0
-    clr = [ light, light, light ]
-    console.log clr
-
-    @colors.push.apply @colors, clr
-    @colors.push.apply @colors, clr
-    @colors.push.apply @colors, clr
-    @colors.push.apply @colors, clr
-    @colors.push.apply @colors, clr
-    @colors.push.apply @colors, clr
-
-    @colors.push.apply @colors, clr
-    @colors.push.apply @colors, clr
-    @colors.push.apply @colors, clr
-    @colors.push.apply @colors, clr
-    @colors.push.apply @colors, clr
-    @colors.push.apply @colors, clr
-  
-    @colors.push.apply @colors, clr
-    @colors.push.apply @colors, clr
-    @colors.push.apply @colors, clr
-    @colors.push.apply @colors, clr
-    @colors.push.apply @colors, clr
-    @colors.push.apply @colors, clr
-  
-    @colors.push.apply @colors, clr
-    @colors.push.apply @colors, clr
-    @colors.push.apply @colors, clr
-    @colors.push.apply @colors, clr
-    @colors.push.apply @colors, clr
-    @colors.push.apply @colors, clr
- 
+    catch e
+      console.log e
+    finally
+      if show[side] then return i+6 else return i
 
   
 exports.ChunkView = ChunkView

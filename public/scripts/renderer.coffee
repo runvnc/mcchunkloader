@@ -183,12 +183,7 @@ class RegionRenderer
       console.log "Error in extractChunk"
       console.log e.message
       console.log e.stack
-    if view.vertices.length is 0
-      console.log "(#{chunkX}, #{chunkZ}) is blank. chunk is "
-      console.log chunk
-      console.log 'view is '
-      console.log view
-    @addTorches view
+    console.log view 
     @addSpecial view    
     vertexIndexArray = new Uint16Array(view.indices.length)
     for i in [0...view.indices.length]
@@ -214,16 +209,15 @@ class RegionRenderer
       position:
         itemSize: 3
         array: vertexPositionArray
-        numItems: vertexPositionArray.length / 3
-      color:
-        itemSize: 3
-        array: colorArray
-        numItems: colorArray / 3      
+        numItems: vertexPositionArray.length / 3  
       uv:
         itemSize: 2
         array: uvArray
-        numItems: uvArray.length / 2
-      
+        numItems: uvArray.length / 2  
+      color:
+        itemSize: 3
+        array: colorArray
+        numItems: colorArray.length / 3
 
     geometry = new THREE.BufferGeometry()
     geometry.attributes = attributes
@@ -239,8 +233,9 @@ class RegionRenderer
     geometry.computeVertexNormals()
 
     material = @loadTexture('/terrain.png')
+    #material = new THREE.MeshBasicMaterial()
     mesh = new THREE.Mesh(geometry, material)
-    #mesh.doubleSided = true
+    mesh.doubleSided = true
     @scene.add mesh
     @objects.push mesh
     @centerX = mesh.position.x + 0.5 * ( geometry.boundingBox.max.x - geometry.boundingBox.min.x )
@@ -301,7 +296,7 @@ class RegionRenderer
 
     @scene.add new THREE.AmbientLight(0x111111)
     pointLight = new THREE.PointLight(0xccbbbb, 1, 2800)
-    pointLight.position.set( 400, 400, 600 ) 
+    pointLight.position.set( 400, 2400, 600 ) 
     @scene.add pointLight
 
     #@pointLight = new THREE.PointLight(0x887777, 1, 18.0)

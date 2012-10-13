@@ -1,5 +1,5 @@
 (function() {
-  var ChunkSizeX, ChunkSizeY, ChunkSizeZ, ChunkView, blockInfo, calcOpts, calcPoint, cubeCount, exports, require, times, typeToCoords,
+  var ChunkSizeX, ChunkSizeY, ChunkSizeZ, ChunkView, blockInfo, calcOpts, calcPoint, cubeCount, exports, require, times, typeToCoords, typeToCoords2,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   if (typeof window !== "undefined" && window !== null) {
@@ -42,14 +42,27 @@
     }
   };
 
+  typeToCoords2 = function(type) {
+    var s, x, y;
+    if (type.t != null) {
+      x = type.t[0];
+      y = 15 - type.t[1];
+      s = 0.000000000;
+      return [x / 16.0, y / 16.0, (x + 1.0) / 16.0, y / 16.0, (x + 1.0) / 16.0, (y + 1.0) / 16.0, x / 16.0, y / 16.0, (x + 1.0) / 16.0, (y + 1.0) / 16.0, x / 16.0, (y + 1.0) / 16.0];
+    } else {
+      return [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+    }
+  };
+
   ChunkView = (function() {
 
     function ChunkView(options, indices, vertices) {
       this.options = options;
       this.indices = indices;
       this.vertices = vertices;
-      this.addFaces = __bind(this.addFaces, this);
+      this.addFace = __bind(this.addFace, this);
       this.addCubePoint = __bind(this.addCubePoint, this);
+      this.showBlock = __bind(this.showBlock, this);
       this.addTexturedBlock = __bind(this.addTexturedBlock, this);
       this.hasNeighbor = __bind(this.hasNeighbor, this);
       this.getColor = __bind(this.getColor, this);
@@ -61,6 +74,7 @@
       this.transNeighbors = __bind(this.transNeighbors, this);
       this.getLightAt = __bind(this.getLightAt, this);
       this.getBlockAt = __bind(this.getBlockAt, this);
+      this.index = 0;
       this.nbt = options.nbt;
       this.pos = options.pos;
       this.torches = [];
@@ -88,9 +102,6 @@
       } else {
         this.showStuff = 'diamondsmoss';
       }
-      console.log('superflat is ' + this.superflat);
-      console.log('showStuff is ' + this.showStuff);
-      console.log('ymin is ' + this.ymin);
       if (options.ymin != null) this.ymin = options.ymin;
     }
 
@@ -128,9 +139,9 @@
         section = sections[_i];
         if (section !== void 0 && section.Y * 1 === sectionnum * 1) {
           if (offset % 2 === 0) {
-            return section.SkyLight[Math.floor(offset / 2)] & 0x0F + section.BlockLight[Math.floor(offset / 2)] & 0x0F;
+            return section.BlockLight[Math.floor(offset / 2)] & 0x0F;
           } else {
-            return (section.SkyLight[Math.floor(offset / 2)] >> 4) & 0x0F + (section.BlockLight[Math.floor(offset / 2)] >> 4) & 0x0F;
+            return (section.BlockLight[Math.floor(offset / 2)] >> 4) & 0x0F;
           }
         }
       }
@@ -253,28 +264,20 @@
     };
 
     ChunkView.prototype.hasNeighbor = function(bl, p, offset0, offset1, offset2) {
-      var id, info, n, _ref, _ref2;
-      return false;
+      var id, info, n, _ref;
+      if (this.showStuff === 'diamondsmoss' && p[1] < 62) return false;
+      if (p[0] === 0 || p[0] === 15 || p[2] === 0 || p[2] === 15) return false;
       n = [p[0] + offset0, p[1] + offset1, p[2] + offset2];
       id = this.getBlockAt(n[0], n[1], n[2]);
-      if (id === 1 || id === 2) {
-        return true;
-      } else {
-        return false;
-      }
-      if (!(id != null) || (id != null) < 1) return false;
-      if (!(id === 1 || id === 2 || id === 3 || id === 4 || id === 5)) {
-        return false;
-      }
       info = this.getBlockType(n[0], n[1], n[2]);
       if ((_ref = info.id) === 0 || _ref === 37 || _ref === 38 || _ref === 50) {
         return false;
       }
-      return (info != null) && (info != null ? info.id : void 0) > 0 && (info.t != null) && info.t[0] && !((_ref2 = info.id) === 37 || _ref2 === 38);
+      return (info != null) && (info != null ? info.id : void 0) > 0 && (info.t != null) && (info.t[0] != null);
     };
 
     ChunkView.prototype.addTexturedBlock = function(p) {
-      var a, block, blockAbove, blockType;
+      var a, block, blockAbove, blockType, show, side, _i, _len, _ref;
       a = p;
       block = this.getBlockInfo(p);
       blockType = block.type;
@@ -291,55 +294,18 @@
         this.special[blockType].push(calcPoint(p, this.options));
         return console.log(this.special);
       } else {
-        this.addCubePoint(a, -1.0, -1.0, 1.0);
-        this.addCubePoint(a, 1.0, -1.0, 1.0);
-        this.addCubePoint(a, 1.0, 1.0, 1.0);
-        this.addCubePoint(a, -1.0, 1.0, 1.0);
-        this.addCubePoint(a, 1.0, -1.0, -1.0);
-        this.addCubePoint(a, -1.0, -1.0, -1.0);
-        this.addCubePoint(a, -1.0, 1.0, -1.0);
-        this.addCubePoint(a, 1.0, 1.0, -1.0);
-        this.addCubePoint(a, -1.0, 1.0, -1.0);
-        this.addCubePoint(a, -1.0, 1.0, 1.0);
-        this.addCubePoint(a, 1.0, 1.0, 1.0);
-        this.addCubePoint(a, 1.0, 1.0, -1.0);
-        this.addCubePoint(a, -1.0, -1.0, -1.0);
-        this.addCubePoint(a, 1.0, -1.0, -1.0);
-        this.addCubePoint(a, 1.0, -1.0, 1.0);
-        this.addCubePoint(a, -1.0, -1.0, 1.0);
-        this.addCubePoint(a, 1.0, -1.0, 1.0);
-        this.addCubePoint(a, 1.0, -1.0, -1.0);
-        this.addCubePoint(a, 1.0, 1.0, -1.0);
-        this.addCubePoint(a, 1.0, 1.0, 1.0);
-        this.addCubePoint(a, -1.0, -1.0, -1.0);
-        this.addCubePoint(a, -1.0, -1.0, 1.0);
-        this.addCubePoint(a, -1.0, 1.0, 1.0);
-        this.addCubePoint(a, -1.0, 1.0, -1.0);
-        this.addFaces(this.cubeCount * 24, block, p);
-        return this.cubeCount++;
+        _ref = ['front', 'back', 'top', 'bottom', 'right', 'left'];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          side = _ref[_i];
+          this.index = this.addFace(this.index, a, block, p, side);
+        }
+        return show = this.showBlock(block, p);
       }
     };
 
-    ChunkView.prototype.addCubePoint = function(a, xdelta, ydelta, zdelta) {
-      var p2, p3, s;
-      s = 0.0000000;
-      p2 = [a[0] + xdelta * 0.5 + s, a[1] + ydelta * 0.5 + s, a[2] + zdelta * 0.5 + s];
-      p3 = calcPoint(p2, this.options);
-      this.vertices.push(p3[0]);
-      this.vertices.push(p3[1]);
-      return this.vertices.push(p3[2]);
-    };
-
-    ChunkView.prototype.addFaces = function(i, bl, p) {
-      var clr, coords, coordsback, coordsbottom, coordsfront, coordsleft, coordsright, coordstop, dirtgrass, light, show, totfaces, _ref;
-      coords = typeToCoords(bl);
+    ChunkView.prototype.showBlock = function(bl, p) {
+      var show, _ref;
       show = {};
-      coordsfront = coords;
-      coordsback = coords;
-      coordsleft = coords;
-      coordsright = coords;
-      coordstop = coords;
-      coordsbottom = coords;
       if ((_ref = bl.id) === 37 || _ref === 38) {
         show = {
           front: true,
@@ -357,73 +323,100 @@
         show.left = !(this.hasNeighbor(bl, p, -1, 0, 0));
         show.right = !(this.hasNeighbor(bl, p, 1, 0, 0));
       }
-      if (bl.id === 2) {
+      return show;
+    };
+
+    ChunkView.prototype.addCubePoint = function(a, xdelta, ydelta, zdelta) {
+      var p2, p3, s;
+      s = 0.0000000;
+      p2 = [a[0] + xdelta * 0.5 + s, a[1] + ydelta * 0.5 + s, a[2] + zdelta * 0.5 + s];
+      p3 = calcPoint(p2, this.options);
+      this.vertices.push(p3[0]);
+      this.vertices.push(p3[1]);
+      return this.vertices.push(p3[2]);
+    };
+
+    ChunkView.prototype.addFace = function(i, a, bl, p, side) {
+      var clr, coords, dirtgrass, facecoords, show;
+      try {
+        coords = typeToCoords2(bl);
         dirtgrass = blockInfo['_2x'];
-        coordsfront = typeToCoords(dirtgrass);
-        coordsback = coordsfront;
-        coordsleft = coordsfront;
-        coordsright = coordsfront;
-        coordsbottom = coordsfront;
+        facecoords = typeToCoords2(dirtgrass);
+        show = this.showBlock(bl, p);
+        if (show[side]) {
+          switch (side) {
+            case 'front':
+              if (bl.id === 2) coords = facecoords;
+              this.addCubePoint(a, -1.0, -1.0, 1.0);
+              this.addCubePoint(a, 1.0, -1.0, 1.0);
+              this.addCubePoint(a, 1.0, 1.0, 1.0);
+              this.addCubePoint(a, -1.0, -1.0, 1.0);
+              this.addCubePoint(a, 1.0, 1.0, 1.0);
+              this.addCubePoint(a, -1.0, 1.0, 1.0);
+              break;
+            case 'back':
+              if (bl.id === 2) coords = facecoords;
+              this.addCubePoint(a, 1.0, -1.0, -1.0);
+              this.addCubePoint(a, -1.0, -1.0, -1.0);
+              this.addCubePoint(a, -1.0, 1.0, -1.0);
+              this.addCubePoint(a, 1.0, -1.0, -1.0);
+              this.addCubePoint(a, -1.0, 1.0, -1.0);
+              this.addCubePoint(a, 1.0, 1.0, -1.0);
+              break;
+            case 'top':
+              this.addCubePoint(a, -1.0, 1.0, -1.0);
+              this.addCubePoint(a, -1.0, 1.0, 1.0);
+              this.addCubePoint(a, 1.0, 1.0, 1.0);
+              this.addCubePoint(a, -1.0, 1.0, -1.0);
+              this.addCubePoint(a, 1.0, 1.0, 1.0);
+              this.addCubePoint(a, 1.0, 1.0, -1.0);
+              break;
+            case 'bottom':
+              if (bl.id === 2) coords = facecoords;
+              this.addCubePoint(a, -1.0, -1.0, -1.0);
+              this.addCubePoint(a, 1.0, -1.0, -1.0);
+              this.addCubePoint(a, 1.0, -1.0, 1.0);
+              this.addCubePoint(a, -1.0, -1.0, -1.0);
+              this.addCubePoint(a, 1.0, -1.0, 1.0);
+              this.addCubePoint(a, -1.0, -1.0, 1.0);
+              break;
+            case 'right':
+              if (bl.id === 2) coords = facecoords;
+              this.addCubePoint(a, 1.0, -1.0, 1.0);
+              this.addCubePoint(a, 1.0, -1.0, -1.0);
+              this.addCubePoint(a, 1.0, 1.0, -1.0);
+              this.addCubePoint(a, 1.0, -1.0, 1.0);
+              this.addCubePoint(a, 1.0, 1.0, -1.0);
+              this.addCubePoint(a, 1.0, 1.0, 1.0);
+              break;
+            case 'left':
+              if (bl.id === 2) coords = facecoords;
+              this.addCubePoint(a, -1.0, -1.0, -1.0);
+              this.addCubePoint(a, -1.0, -1.0, 1.0);
+              this.addCubePoint(a, -1.0, 1.0, 1.0);
+              this.addCubePoint(a, -1.0, -1.0, -1.0);
+              this.addCubePoint(a, -1.0, 1.0, 1.0);
+              this.addCubePoint(a, -1.0, 1.0, -1.0);
+          }
+          this.indices.push.apply(this.indices, [i + 0, i + 1, i + 2, i + 3, i + 4, i + 5]);
+          this.textcoords.push.apply(this.textcoords, coords);
+          clr = [1.0, 1.0, 1.0];
+          this.colors.push.apply(this.colors, clr);
+          this.colors.push.apply(this.colors, clr);
+          this.colors.push.apply(this.colors, clr);
+          this.colors.push.apply(this.colors, clr);
+          this.colors.push.apply(this.colors, clr);
+          return this.colors.push.apply(this.colors, clr);
+        }
+      } catch (e) {
+        return console.log(e);
+      } finally {
+        if (show[side]) {
+          return i + 6;
+        } else {
+          return i;
+        }
       }
-      totfaces = 0;
-      if (show.front) totfaces++;
-      if (show.back) totfaces++;
-      if (show.top) totfaces++;
-      if (show.bottom) totfaces++;
-      if (show.left) totfaces++;
-      if (show.right) totfaces++;
-      if (show.front) {
-        this.indices.push.apply(this.indices, [i + 0, i + 1, i + 2, i + 0, i + 2, i + 3]);
-      }
-      if (show.back) {
-        this.indices.push.apply(this.indices, [i + 4, i + 5, i + 6, i + 4, i + 6, i + 7]);
-      }
-      if (show.top) {
-        this.indices.push.apply(this.indices, [i + 8, i + 9, i + 10, i + 8, i + 10, i + 11]);
-      }
-      if (show.bottom) {
-        this.indices.push.apply(this.indices, [i + 12, i + 13, i + 14, i + 12, i + 14, i + 15]);
-      }
-      if (show.right) {
-        this.indices.push.apply(this.indices, [i + 16, i + 17, i + 18, i + 16, i + 18, i + 19]);
-      }
-      if (show.left) {
-        this.indices.push.apply(this.indices, [i + 20, i + 21, i + 22, i + 20, i + 22, i + 23]);
-      }
-      this.textcoords.push.apply(this.textcoords, coordsfront);
-      this.textcoords.push.apply(this.textcoords, coordsback);
-      this.textcoords.push.apply(this.textcoords, coordstop);
-      this.textcoords.push.apply(this.textcoords, coordsbottom);
-      this.textcoords.push.apply(this.textcoords, coordsright);
-      this.textcoords.push.apply(this.textcoords, coordsleft);
-      light = this.getLightAt(p[0], p[1], p[2]);
-      light = 0.7 + light / 8.0;
-      clr = [light, light, light];
-      console.log(clr);
-      this.colors.push.apply(this.colors, clr);
-      this.colors.push.apply(this.colors, clr);
-      this.colors.push.apply(this.colors, clr);
-      this.colors.push.apply(this.colors, clr);
-      this.colors.push.apply(this.colors, clr);
-      this.colors.push.apply(this.colors, clr);
-      this.colors.push.apply(this.colors, clr);
-      this.colors.push.apply(this.colors, clr);
-      this.colors.push.apply(this.colors, clr);
-      this.colors.push.apply(this.colors, clr);
-      this.colors.push.apply(this.colors, clr);
-      this.colors.push.apply(this.colors, clr);
-      this.colors.push.apply(this.colors, clr);
-      this.colors.push.apply(this.colors, clr);
-      this.colors.push.apply(this.colors, clr);
-      this.colors.push.apply(this.colors, clr);
-      this.colors.push.apply(this.colors, clr);
-      this.colors.push.apply(this.colors, clr);
-      this.colors.push.apply(this.colors, clr);
-      this.colors.push.apply(this.colors, clr);
-      this.colors.push.apply(this.colors, clr);
-      this.colors.push.apply(this.colors, clr);
-      this.colors.push.apply(this.colors, clr);
-      return this.colors.push.apply(this.colors, clr);
     };
 
     return ChunkView;

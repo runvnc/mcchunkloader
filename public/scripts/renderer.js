@@ -237,13 +237,7 @@
         console.log(e.message);
         console.log(e.stack);
       }
-      if (view.vertices.length === 0) {
-        console.log("(" + chunkX + ", " + chunkZ + ") is blank. chunk is ");
-        console.log(chunk);
-        console.log('view is ');
-        console.log(view);
-      }
-      this.addTorches(view);
+      console.log(view);
       this.addSpecial(view);
       vertexIndexArray = new Uint16Array(view.indices.length);
       for (i = 0, _ref = view.indices.length; 0 <= _ref ? i < _ref : i > _ref; 0 <= _ref ? i++ : i--) {
@@ -272,15 +266,15 @@
           array: vertexPositionArray,
           numItems: vertexPositionArray.length / 3
         },
-        color: {
-          itemSize: 3,
-          array: colorArray,
-          numItems: colorArray / 3
-        },
         uv: {
           itemSize: 2,
           array: uvArray,
           numItems: uvArray.length / 2
+        },
+        color: {
+          itemSize: 3,
+          array: colorArray,
+          numItems: colorArray.length / 3
         }
       };
       geometry = new THREE.BufferGeometry();
@@ -297,6 +291,7 @@
       geometry.computeVertexNormals();
       material = this.loadTexture('/terrain.png');
       mesh = new THREE.Mesh(geometry, material);
+      mesh.doubleSided = true;
       this.scene.add(mesh);
       this.objects.push(mesh);
       this.centerX = mesh.position.x + 0.5 * (geometry.boundingBox.max.x - geometry.boundingBox.min.x);
@@ -380,7 +375,7 @@
       this.scene = new THREE.Scene();
       this.scene.add(new THREE.AmbientLight(0x111111));
       pointLight = new THREE.PointLight(0xccbbbb, 1, 2800);
-      pointLight.position.set(400, 400, 600);
+      pointLight.position.set(400, 2400, 600);
       this.scene.add(pointLight);
       this.renderer = new THREE.WebGLRenderer({
         antialias: true,

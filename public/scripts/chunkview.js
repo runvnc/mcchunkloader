@@ -106,8 +106,8 @@
     }
 
     ChunkView.prototype.getBlockAt = function(x, y, z) {
-      var blockpos, offset, section, sectionnum, sections, _i, _len;
-      if (this.nbt.root.Level.Sections != null) {
+      var blockpos, offset, section, sectionnum, sections, _i, _len, _ref;
+      if (((_ref = this.nbt.root) != null ? _ref.Level.Sections : void 0) != null) {
         sections = this.nbt.root.Level.Sections;
       } else {
         sections = this.nbt.root.Sections;
@@ -225,13 +225,21 @@
     ChunkView.prototype.renderPoints = function() {
       var i, verts, _results;
       i = 0;
-      _results = [];
-      while (i < this.filled.length) {
-        verts = this.filled[i];
-        this.addTexturedBlock(verts);
-        _results.push(i++);
+      if (this.filled.length === 0) {
+        console.log('empty chunk');
+        console.log(this.nbt);
       }
-      return _results;
+      try {
+        _results = [];
+        while (i < this.filled.length && i < 1000) {
+          verts = this.filled[i];
+          this.addTexturedBlock(verts);
+          _results.push(i++);
+        }
+        return _results;
+      } catch (e) {
+        return console.log(e);
+      }
     };
 
     ChunkView.prototype.getBlockType = function(x, y, z) {
@@ -291,8 +299,7 @@
           }
         }
         if (!(this.special[blockType] != null)) this.special[blockType] = [];
-        this.special[blockType].push(calcPoint(p, this.options));
-        return console.log(this.special);
+        return this.special[blockType].push(calcPoint(p, this.options));
       } else {
         _ref = ['front', 'back', 'top', 'bottom', 'right', 'left'];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {

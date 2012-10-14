@@ -133,9 +133,6 @@ class RegionRenderer
 
   addSpecial: (view) =>
     if view.special['glasspane']?
-      console.log 'view special is '
-      console.log view.special
-      
       for coords in view.special.glasspane
         @addPane coords
     if view.special['glass']?
@@ -183,6 +180,8 @@ class RegionRenderer
       console.log "Error in extractChunk"
       console.log e.message
       console.log e.stack
+    #if view.indices.length is 0
+    console.log "#{chunkX}, #{chunkZ}"
     console.log view 
     @addSpecial view    
     vertexIndexArray = new Uint16Array(view.indices.length)
@@ -200,6 +199,12 @@ class RegionRenderer
     uvArray = new Float32Array(view.textcoords.length)
     for i in [0...view.textcoords.length]
       uvArray[i] = view.textcoords[i]
+  
+    chunkSize = 20000
+    startedIndex = vertexIndexArray.length
+    indices = vertexIndexArray
+    for i in [0..indices.length-1]
+      indices[ i ] = i % ( 3 * chunkSize )
 
     attributes =
       index:
@@ -220,13 +225,30 @@ class RegionRenderer
         numItems: colorArray.length / 3
 
     geometry = new THREE.BufferGeometry()
+    geometry.offsets = []
+    left = startedIndex
+    start = 0
+    index = 0
+    loop
+      count = Math.min(chunkSize * 3, left)
+      chunk =
+        start: start
+        count: count
+        index: index
+
+      geometry.offsets.push chunk
+      start += count
+      index += chunkSize * 3
+      left -= count
+      break  if left <= 0
+
     geometry.attributes = attributes
         
-    geometry.offsets = [{
-      start: 0
-      count: vertexIndexArray.length
-      index: 0
-    }]
+    #geometry.offsets = [{
+    #  start: 0
+    #  count: vertexIndexArray.length
+    #  index: 0
+    #}]
       
     geometry.computeBoundingBox()
     geometry.computeBoundingSphere()
@@ -294,9 +316,9 @@ class RegionRenderer
       
     @scene = new THREE.Scene()
 
-    @scene.add new THREE.AmbientLight(0x111111)
+    @scene.add new THREE.AmbientLight(0x444444)
     pointLight = new THREE.PointLight(0xccbbbb, 1, 2800)
-    pointLight.position.set( 400, 2400, 600 ) 
+    pointLight.position.set( 400, 1400, 600 ) 
     @scene.add pointLight
 
     #@pointLight = new THREE.PointLight(0x887777, 1, 18.0)

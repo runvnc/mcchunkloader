@@ -162,8 +162,6 @@
     RegionRenderer.prototype.addSpecial = function(view) {
       var coords, _i, _j, _k, _l, _len, _len2, _len3, _len4, _ref, _ref2, _ref3, _ref4, _results;
       if (view.special['glasspane'] != null) {
-        console.log('view special is ');
-        console.log(view.special);
         _ref = view.special.glasspane;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           coords = _ref[_i];
@@ -220,7 +218,7 @@
     };
 
     RegionRenderer.prototype.loadChunk = function(chunk, chunkX, chunkZ) {
-      var attributes, colorArray, geometry, i, material, mesh, options, uvArray, vertexIndexArray, vertexPositionArray, view, _ref, _ref2, _ref3, _ref4;
+      var attributes, chunkSize, colorArray, count, geometry, i, index, indices, left, material, mesh, options, start, startedIndex, uvArray, vertexIndexArray, vertexPositionArray, view, _ref, _ref2, _ref3, _ref4, _ref5;
       options = {
         nbt: chunk,
         ymin: this.options.ymin,
@@ -237,6 +235,7 @@
         console.log(e.message);
         console.log(e.stack);
       }
+      console.log("" + chunkX + ", " + chunkZ);
       console.log(view);
       this.addSpecial(view);
       vertexIndexArray = new Uint16Array(view.indices.length);
@@ -254,6 +253,12 @@
       uvArray = new Float32Array(view.textcoords.length);
       for (i = 0, _ref4 = view.textcoords.length; 0 <= _ref4 ? i < _ref4 : i > _ref4; 0 <= _ref4 ? i++ : i--) {
         uvArray[i] = view.textcoords[i];
+      }
+      chunkSize = 20000;
+      startedIndex = vertexIndexArray.length;
+      indices = vertexIndexArray;
+      for (i = 0, _ref5 = indices.length - 1; 0 <= _ref5 ? i <= _ref5 : i >= _ref5; 0 <= _ref5 ? i++ : i--) {
+        indices[i] = i % (3 * chunkSize);
       }
       attributes = {
         index: {
@@ -278,14 +283,24 @@
         }
       };
       geometry = new THREE.BufferGeometry();
+      geometry.offsets = [];
+      left = startedIndex;
+      start = 0;
+      index = 0;
+      while (true) {
+        count = Math.min(chunkSize * 3, left);
+        chunk = {
+          start: start,
+          count: count,
+          index: index
+        };
+        geometry.offsets.push(chunk);
+        start += count;
+        index += chunkSize * 3;
+        left -= count;
+        if (left <= 0) break;
+      }
       geometry.attributes = attributes;
-      geometry.offsets = [
-        {
-          start: 0,
-          count: vertexIndexArray.length,
-          index: 0
-        }
-      ];
       geometry.computeBoundingBox();
       geometry.computeBoundingSphere();
       geometry.computeVertexNormals();
@@ -373,9 +388,9 @@
       this.objects = [];
       this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1500);
       this.scene = new THREE.Scene();
-      this.scene.add(new THREE.AmbientLight(0x111111));
+      this.scene.add(new THREE.AmbientLight(0x444444));
       pointLight = new THREE.PointLight(0xccbbbb, 1, 2800);
-      pointLight.position.set(400, 2400, 600);
+      pointLight.position.set(400, 1400, 600);
       this.scene.add(pointLight);
       this.renderer = new THREE.WebGLRenderer({
         antialias: true,

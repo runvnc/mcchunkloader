@@ -62,7 +62,7 @@ class ChunkView
     if options.ymin? then @ymin = options.ymin
   
   getBlockAt: (x, y, z) =>
-    if @nbt.root.Level.Sections?
+    if @nbt.root?.Level.Sections?
       sections = @nbt.root.Level.Sections
     else
       sections = @nbt.root.Sections
@@ -165,11 +165,17 @@ class ChunkView
 
   renderPoints: =>
     i = 0
+    if @filled.length is 0
+      console.log 'empty chunk'
+      console.log @nbt
+    try 
+      while i < @filled.length and i < 1000
+        verts = @filled[i]
+        @addTexturedBlock verts
+        i++
+    catch e
+      console.log e
 
-    while i < @filled.length
-      verts = @filled[i]
-      @addTexturedBlock verts
-      i++
 
   getBlockType: (x, y, z) =>
     blockType = blockInfo["_-1"]
@@ -222,7 +228,6 @@ class ChunkView
       if not @special[blockType]?
         @special[blockType] = []
       @special[blockType].push calcPoint(p, this.options)
-      console.log @special
     else      
       for side in ['front','back','top','bottom','right','left']
         @index = @addFace @index, a, block, p, side      

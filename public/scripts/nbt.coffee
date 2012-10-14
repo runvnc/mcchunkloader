@@ -94,7 +94,7 @@ class TAG_Compound extends TAG
     obj ={}     
     i = 0
     tag = 'dummy'
-    while tag? and tag isnt '=END=' and i < 16
+    while tag? and tag isnt '=END=' and i < 160
       try
         tag = @reader.read()
         if tag? and tag isnt '=END='

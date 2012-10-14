@@ -296,7 +296,7 @@
       obj = {};
       i = 0;
       tag = 'dummy';
-      while ((tag != null) && tag !== '=END=' && i < 16) {
+      while ((tag != null) && tag !== '=END=' && i < 160) {
         try {
           tag = this.reader.read();
           if ((tag != null) && tag !== '=END=') {

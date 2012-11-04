@@ -60,7 +60,7 @@ var PointerLockControls = function ( camera ) {
 				break;
 
 			case 32: // space
-				if ( canJump === true ) velocity.y += 0.8;
+				if ( canJump === true ) velocity.y += 0.65;
 				canJump = false;
 				break;
 
@@ -125,16 +125,16 @@ var PointerLockControls = function ( camera ) {
 
 		delta *= 0.05;
 
-		velocity.x += ( - velocity.x ) * 0.08 * delta;
-		velocity.z += ( - velocity.z ) * 0.08 * delta;
+		velocity.x += ( - velocity.x ) * 0.01 * delta;
+		velocity.z += ( - velocity.z ) * 0.01 * delta;
 
 		velocity.y -= 0.1 * delta;
 
-		if ( moveForward ) velocity.z -= 0.06 * delta;
-		if ( moveBackward ) velocity.z += 0.06 * delta;
+		if ( moveForward ) velocity.z -= 0.01 * delta;
+		if ( moveBackward ) velocity.z += 0.01 * delta;
 
-		if ( moveLeft ) velocity.x -= 0.06 * delta;
-		if ( moveRight ) velocity.x += 0.05 * delta;
+		if ( moveLeft ) velocity.x -= 0.01 * delta;
+		if ( moveRight ) velocity.x += 0.01 * delta;
 
 		if ( isOnObject === true ) {
 

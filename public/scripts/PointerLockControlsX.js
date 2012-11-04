@@ -16,7 +16,6 @@ var PointerLockControls = function ( camera ) {
 
 	var isOnObject = false;
 	var canJump = false;
-  var forwardBlocked = false;
 
 	var velocity = new THREE.Vector3();
 
@@ -58,9 +57,12 @@ var PointerLockControls = function ( camera ) {
 			case 68: // d
 				moveRight = true;
 				break;
-
+			case 16: // shift
+				if ( canJump === true ) velocity.y -= 2.75;
+				canJump = false;
+				break;
 			case 32: // space
-				if ( canJump === true ) velocity.y += 0.8;
+				if ( canJump === true ) velocity.y += 2.0;
 				canJump = false;
 				break;
 
@@ -115,36 +117,36 @@ var PointerLockControls = function ( camera ) {
 
 	};
 
-  this.forwardBlocked = function ( boolean ) {
-    forwardBlocked = boolean;
-  };
-
 	this.update = function ( delta ) {
 
 		if ( scope.enabled === false ) return;
 
-		delta *= 0.05;
+		delta *= 0.1;
 
 		velocity.x += ( - velocity.x ) * 0.08 * delta;
 		velocity.z += ( - velocity.z ) * 0.08 * delta;
 
-		velocity.y -= 0.1 * delta;
+    var goingUp = true;
+    if (velocity.y > 0) {
+		  velocity.y -= 0.15 * delta;
+    } else {
+      goingUp = false;
+      velocity.y += 0.15 * delta;
+    }
 
-		if ( moveForward ) velocity.z -= 0.06 * delta;
-		if ( moveBackward ) velocity.z += 0.06 * delta;
+		if ( moveForward ) velocity.z -= 0.04 * delta;
+		if ( moveBackward ) velocity.z += 0.04 * delta;
 
-		if ( moveLeft ) velocity.x -= 0.06 * delta;
-		if ( moveRight ) velocity.x += 0.05 * delta;
+		if ( moveLeft ) velocity.x -= 0.04 * delta;
+		if ( moveRight ) velocity.x += 0.04 * delta;
 
 		if ( isOnObject === true ) {
-
-			velocity.y = Math.max( 0, velocity.y );
-
+      if (goingUp) {
+			  velocity.y = Math.max( 0, velocity.y );
+      } else {
+        velocity.y = Math.min( 0, velocity.y );
+      }
 		}
-
-    if (forwardBlocked == true) {
-      velocity.z = Math.max( 0, velocity.z );
-    }
 
 		yawObject.translateX( velocity.x );
 		yawObject.translateY( velocity.y ); 

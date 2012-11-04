@@ -1,6 +1,7 @@
 (function() {
   var ChunkView, RegionRenderer, SCALE, blockInfo, canvas, chunks, chunkview, controls, delay, exports, require, time,
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __indexOf = Array.prototype.indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   if (typeof window !== "undefined" && window !== null) {
     require = window.require;
@@ -40,6 +41,10 @@
       this.options = options;
       this.render = __bind(this.render, this);
       this.animate = __bind(this.animate, this);
+      this.drawRay = __bind(this.drawRay, this);
+      this.findIntersects = __bind(this.findIntersects, this);
+      this.stopMovement = __bind(this.stopMovement, this);
+      this.nearby = __bind(this.nearby, this);
       this.onWindowResize = __bind(this.onWindowResize, this);
       this.init = __bind(this.init, this);
       this.showProgress = __bind(this.showProgress, this);
@@ -55,6 +60,7 @@
       this.mouseX = 0;
       this.mouseY = 0;
       this.textures = {};
+      this.included = [];
       this.windowHalfX = window.innerWidth / 2;
       this.windowHalfY = window.innerHeight / 2;
       blocker = document.getElementById("blocker");
@@ -218,7 +224,7 @@
     };
 
     RegionRenderer.prototype.loadChunk = function(chunk, chunkX, chunkZ) {
-      var attributes, chunkSize, colorArray, count, geometry, i, index, indices, left, material, mesh, options, start, startedIndex, uvArray, vertexIndexArray, vertexPositionArray, view, _ref, _ref2, _ref3, _ref4, _ref5;
+      var attributes, chunkSize, colorArray, count, cube, f, geometry, i, index, indices, left, mat, material, mesh, options, start, startedIndex, uvArray, vertexIndexArray, vertexPositionArray, verts, view, _i, _len, _ref, _ref2, _ref3, _ref4, _ref5, _ref6;
       options = {
         nbt: chunk,
         ymin: this.options.ymin,
@@ -235,29 +241,46 @@
         console.log(e.message);
         console.log(e.stack);
       }
-      console.log("" + chunkX + ", " + chunkZ);
-      console.log(view);
+      cube = new THREE.CubeGeometry(0.99, 0.99, 0.99);
+      mat = new THREE.MeshBasicMaterial({
+        color: 0xFFFFFF,
+        wireframe: true,
+        opacity: 0.0
+      });
+      _ref = view.filled;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        f = _ref[_i];
+        verts = chunkview.calcPoint([f[0], f[1], f[2]], {
+          chunkX: chunkX,
+          chunkZ: chunkZ
+        });
+        mesh = new THREE.Mesh(cube, mat);
+        mesh.position.x = verts[0];
+        mesh.position.y = verts[1];
+        mesh.position.z = verts[2];
+        this.objects.push(mesh);
+      }
       this.addSpecial(view);
       vertexIndexArray = new Uint16Array(view.indices.length);
-      for (i = 0, _ref = view.indices.length; 0 <= _ref ? i < _ref : i > _ref; 0 <= _ref ? i++ : i--) {
+      for (i = 0, _ref2 = view.indices.length; 0 <= _ref2 ? i < _ref2 : i > _ref2; 0 <= _ref2 ? i++ : i--) {
         vertexIndexArray[i] = view.indices[i];
       }
       vertexPositionArray = new Float32Array(view.vertices.length);
-      for (i = 0, _ref2 = view.vertices.length; 0 <= _ref2 ? i < _ref2 : i > _ref2; 0 <= _ref2 ? i++ : i--) {
+      for (i = 0, _ref3 = view.vertices.length; 0 <= _ref3 ? i < _ref3 : i > _ref3; 0 <= _ref3 ? i++ : i--) {
         vertexPositionArray[i] = view.vertices[i];
       }
       colorArray = new Float32Array(view.colors.length);
-      for (i = 0, _ref3 = view.colors.length; 0 <= _ref3 ? i < _ref3 : i > _ref3; 0 <= _ref3 ? i++ : i--) {
+      for (i = 0, _ref4 = view.colors.length; 0 <= _ref4 ? i < _ref4 : i > _ref4; 0 <= _ref4 ? i++ : i--) {
         colorArray[i] = view.colors[i];
       }
       uvArray = new Float32Array(view.textcoords.length);
-      for (i = 0, _ref4 = view.textcoords.length; 0 <= _ref4 ? i < _ref4 : i > _ref4; 0 <= _ref4 ? i++ : i--) {
+      for (i = 0, _ref5 = view.textcoords.length; 0 <= _ref5 ? i < _ref5 : i > _ref5; 0 <= _ref5 ? i++ : i--) {
         uvArray[i] = view.textcoords[i];
       }
       chunkSize = 20000;
       startedIndex = vertexIndexArray.length;
       indices = vertexIndexArray;
-      for (i = 0, _ref5 = indices.length - 1; 0 <= _ref5 ? i <= _ref5 : i >= _ref5; 0 <= _ref5 ? i++ : i--) {
+      for (i = 0, _ref6 = indices.length - 1; 0 <= _ref6 ? i <= _ref6 : i >= _ref6; 0 <= _ref6 ? i++ : i--) {
         indices[i] = i % (3 * chunkSize);
       }
       attributes = {
@@ -308,7 +331,6 @@
       mesh = new THREE.Mesh(geometry, material);
       mesh.doubleSided = true;
       this.scene.add(mesh);
-      this.objects.push(mesh);
       this.centerX = mesh.position.x + 0.5 * (geometry.boundingBox.max.x - geometry.boundingBox.min.x);
       this.centerY = mesh.position.y + 0.5 * (geometry.boundingBox.max.y - geometry.boundingBox.min.y);
       this.centerZ = mesh.position.z + 0.5 * (geometry.boundingBox.max.z - geometry.boundingBox.min.z);
@@ -335,7 +357,7 @@
     };
 
     RegionRenderer.prototype.load = function() {
-      var camPos, chunk, maxx, maxz, minx, minz, region, size, startX, startZ, x, z, _results;
+      var camPos, chunk, maxx, maxz, minx, minz, region, size, startX, startZ, x, z;
       startX = this.options.x * 1;
       startZ = this.options.z * 1;
       camPos = this.mcCoordsToWorld(startX, this.options.y * 1, startZ);
@@ -348,33 +370,26 @@
       controls.getObject().position.y = camPos.y;
       controls.getObject().position.z = camPos.z;
       console.log('minx is ' + minx + ' and minz is ' + minz);
-      _results = [];
       for (x = minx; minx <= maxx ? x <= maxx : x >= maxx; minx <= maxx ? x++ : x--) {
-        _results.push((function() {
-          var _results2;
-          _results2 = [];
-          for (z = minz; minz <= maxz ? z <= maxz : z >= maxz; minz <= maxz ? z++ : z--) {
-            region = this.region;
-            if (true || this.region.hasChunk(x, z)) {
-              try {
-                chunk = region.getChunk(x, z);
-                if (chunk != null) {
-                  _results2.push(this.loadChunk(chunk, x, z));
-                } else {
-                  _results2.push(console.log('chunk at ' + x + ',' + z + ' is undefined'));
-                }
-              } catch (e) {
-                console.log(e.message);
-                _results2.push(console.log(e.stack));
+        for (z = minz; minz <= maxz ? z <= maxz : z >= maxz; minz <= maxz ? z++ : z--) {
+          region = this.region;
+          if (true || this.region.hasChunk(x, z)) {
+            try {
+              chunk = region.getChunk(x, z);
+              if (chunk != null) {
+                this.loadChunk(chunk, x, z);
+              } else {
+                console.log('chunk at ' + x + ',' + z + ' is undefined');
               }
-            } else {
-              _results2.push(void 0);
+            } catch (e) {
+              console.log(e.message);
+              console.log(e.stack);
             }
           }
-          return _results2;
-        }).call(this));
+        }
       }
-      return _results;
+      console.log('objects is:');
+      return console.log(this.objects);
     };
 
     RegionRenderer.prototype.showProgress = function(ratio) {
@@ -382,12 +397,14 @@
     };
 
     RegionRenderer.prototype.init = function() {
-      var container, pointLight;
+      var container, cube, material2, pointLight;
       container = document.createElement('div');
       document.body.appendChild(container);
       this.objects = [];
+      this.collide = new THREE.Object3D();
       this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1500);
       this.scene = new THREE.Scene();
+      this.scene.add(this.collide);
       this.scene.add(new THREE.AmbientLight(0x444444));
       pointLight = new THREE.PointLight(0xccbbbb, 1, 2800);
       pointLight.position.set(400, 1400, 600);
@@ -404,11 +421,21 @@
       this.scene.add(controls.getObject());
       this.ray = new THREE.Ray();
       this.ray.direction.set(0, -1, 0);
+      this.ray2 = new THREE.Ray();
+      this.ray2.direction.set(0, 0, 3);
       this.stats = new Stats();
       this.stats.domElement.style.position = 'absolute';
       this.stats.domElement.style.top = '0px';
       container.appendChild(this.stats.domElement);
-      return window.addEventListener('resize', this.onWindowResize, false);
+      window.addEventListener('resize', this.onWindowResize, false);
+      material2 = new THREE.MeshBasicMaterial({
+        color: 0xff0000,
+        wireframe: true
+      });
+      cube = new THREE.CubeGeometry(0.2, 0.2, 0.2);
+      this.forward = new THREE.Mesh(cube, material2);
+      this.forward.doubleSided = true;
+      return this.scene.add(this.forward);
     };
 
     RegionRenderer.prototype.onWindowResize = function() {
@@ -419,9 +446,97 @@
       return this.renderer.setSize(window.innerWidth, window.innerHeight);
     };
 
+    RegionRenderer.prototype.nearby = function(position) {
+      var obj, _i, _len, _ref, _results;
+      _ref = this.objects;
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        obj = _ref[_i];
+        if (Math.abs(obj.position.x - position.x) < 2.2 && Math.abs(obj.position.z - position.z) < 2.2) {
+          _results.push(obj);
+        }
+      }
+      return _results;
+    };
+
+    RegionRenderer.prototype.stopMovement = function(position, translateFunc) {
+      var controlObj, obj, _i, _len, _ref;
+      controlObj = controls.getObject();
+      this.forward.position.x = controlObj.position.x;
+      this.forward.position.y = controlObj.position.y;
+      this.forward.position.z = controlObj.position.z;
+      this.forward.rotation.x = controlObj.rotation.x;
+      this.forward.rotation.z = controlObj.rotation.z;
+      this.forward.rotation.y = controlObj.rotation.y;
+      this.forward[translateFunc](-0.25);
+      _ref = this.objects;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        obj = _ref[_i];
+        if (Math.abs(obj.position.y - this.forward.position.y) < 0.7 && Math.abs(obj.position.x - this.forward.position.x) < 0.7 && Math.abs(obj.position.z - this.forward.position.z) < 0.7) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    RegionRenderer.prototype.findIntersects = function(ray) {
+      var d, intersections, near, obj, _i, _j, _len, _len2, _ref;
+      if (this.objects.length > 0) {
+        d = 0;
+        near = this.nearby(ray.origin);
+        _ref = this.included;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          obj = _ref[_i];
+          if (!(__indexOf.call(near, obj) >= 0)) this.scene.remove(obj);
+        }
+        for (_j = 0, _len2 = near.length; _j < _len2; _j++) {
+          obj = near[_j];
+          if (!(__indexOf.call(this.included, obj) >= 0)) {
+            this.scene.add(obj);
+            this.included.push(obj);
+          }
+        }
+        intersections = ray.intersectObjects(near);
+        return intersections;
+      }
+      return [];
+    };
+
+    RegionRenderer.prototype.drawRay = function(ray) {
+      var dd;
+      try {
+        this.scene.remove(this.line);
+      } catch (e) {
+        dd = 1;
+      }
+      this.forward.position.x = ray.origin.x;
+      this.forward.position.y = ray.origin.y + 2.0;
+      this.forward.position.z = ray.origin.z - 10.0;
+      return null;
+    };
+
     RegionRenderer.prototype.animate = function() {
+      var co, distance, int, intersections, pos, _i, _len;
       requestAnimationFrame(this.animate);
-      controls.isOnObject(true);
+      controls.isOnObject(false);
+      controls.forwardBlocked(false);
+      this.ray.origin.copy(controls.getObject().position);
+      this.ray.origin.y -= 0.15;
+      intersections = this.findIntersects(this.ray);
+      co = controls.getObject().position;
+      pos = new THREE.Vector3(co.x, co.y + 0.5, co.z);
+      if (this.stopMovement(pos, 'translateZ')) {
+        controls.forwardBlocked(true);
+        controls.isOnObject(true);
+      }
+      if ((intersections != null ? intersections.length : void 0) > 0) {
+        for (_i = 0, _len = intersections.length; _i < _len; _i++) {
+          int = intersections[_i];
+          distance = int.distance;
+          if (distance > 0 && distance < 1.0) controls.isOnObject(true);
+        }
+      }
+      if (this.stopMovement(pos, 'translateY')) controls.isOnObject(true);
       this.render();
       return this.stats.update();
     };

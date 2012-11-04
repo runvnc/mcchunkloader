@@ -28,6 +28,7 @@ class RegionRenderer
     @mouseX = 0
     @mouseY = 0
     @textures = {}
+    @included = []
 
     @windowHalfX = window.innerWidth / 2;
     @windowHalfY = window.innerHeight / 2;
@@ -180,9 +181,17 @@ class RegionRenderer
       console.log "Error in extractChunk"
       console.log e.message
       console.log e.stack
-    #if view.indices.length is 0
-    console.log "#{chunkX}, #{chunkZ}"
-    console.log view 
+
+    cube = new THREE.CubeGeometry(0.99,0.99,0.99)
+    mat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, wireframe: true, opacity: 0.0 })
+    for f in view.filled
+      verts = chunkview.calcPoint [f[0], f[1], f[2]], { chunkX, chunkZ }
+      mesh = new THREE.Mesh(cube, mat)
+      mesh.position.x = verts[0]
+      mesh.position.y = verts[1]
+      mesh.position.z = verts[2]
+      @objects.push mesh      
+
     @addSpecial view    
     vertexIndexArray = new Uint16Array(view.indices.length)
     for i in [0...view.indices.length]
@@ -242,13 +251,7 @@ class RegionRenderer
       left -= count
       break  if left <= 0
 
-    geometry.attributes = attributes
-        
-    #geometry.offsets = [{
-    #  start: 0
-    #  count: vertexIndexArray.length
-    #  index: 0
-    #}]
+    geometry.attributes = attributes        
       
     geometry.computeBoundingBox()
     geometry.computeBoundingSphere()
@@ -259,7 +262,7 @@ class RegionRenderer
     mesh = new THREE.Mesh(geometry, material)
     mesh.doubleSided = true
     @scene.add mesh
-    @objects.push mesh
+
     @centerX = mesh.position.x + 0.5 * ( geometry.boundingBox.max.x - geometry.boundingBox.min.x )
     @centerY = mesh.position.y + 0.5 * ( geometry.boundingBox.max.y - geometry.boundingBox.min.y )
     @centerZ = mesh.position.z + 0.5 * ( geometry.boundingBox.max.z - geometry.boundingBox.min.z )
@@ -302,6 +305,8 @@ class RegionRenderer
           catch e
             console.log e.message
             console.log e.stack
+    console.log 'objects is:'
+    console.log @objects
 
   showProgress: (ratio) =>
     $('#proginner').width 300*ratio
@@ -310,12 +315,14 @@ class RegionRenderer
     container = document.createElement 'div'
     document.body.appendChild container 
 
-    @objects = []
+    @objects = [] 
+    @collide = new THREE.Object3D()
 
     @camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 1500 )
       
     @scene = new THREE.Scene()
-
+    @scene.add @collide
+    
     @scene.add new THREE.AmbientLight(0x444444)
     pointLight = new THREE.PointLight(0xccbbbb, 1, 2800)
     pointLight.position.set( 400, 1400, 600 ) 
@@ -337,12 +344,22 @@ class RegionRenderer
     @ray = new THREE.Ray()
     @ray.direction.set( 0, -1, 0 )
 
+    @ray2 = new THREE.Ray()
+    @ray2.direction.set( 0, 0, 3 )
+
     @stats = new Stats()
     @stats.domElement.style.position = 'absolute'
     @stats.domElement.style.top = '0px'
     container.appendChild @stats.domElement
 
     window.addEventListener 'resize', @onWindowResize, false
+
+    material2 = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true })
+    cube = new THREE.CubeGeometry(0.2,0.2,0.2)
+    @forward = new THREE.Mesh(cube, material2)    
+    @forward.doubleSided = true
+    @scene.add @forward
+
 
   onWindowResize: =>
     @windowHalfX = window.innerWidth / 2
@@ -353,23 +370,93 @@ class RegionRenderer
 
     @renderer.setSize window.innerWidth, window.innerHeight
 
+  nearby: (position) =>
+    (obj for obj in @objects when Math.abs(obj.position.x - position.x) < 2.2 and
+                                  Math.abs(obj.position.z - position.z ) < 2.2)
+
+  stopMovement: (position, translateFunc) =>
+    #@forward.rotation.set controls.getObject().rotation
+    controlObj = controls.getObject()
+    @forward.position.x = controlObj.position.x
+    @forward.position.y = controlObj.position.y
+    @forward.position.z = controlObj.position.z
+    @forward.rotation.x = controlObj.rotation.x
+    @forward.rotation.z = controlObj.rotation.z
+    @forward.rotation.y = controlObj.rotation.y
+    @forward[translateFunc](-0.25)
+    for obj in @objects
+      if Math.abs(obj.position.y - @forward.position.y) < 0.7 and
+         Math.abs(obj.position.x - @forward.position.x) < 0.7 and
+         Math.abs(obj.position.z - @forward.position.z) < 0.7
+        return true
+    return false
+
+
+  findIntersects: (ray) =>
+    if @objects.length > 0   
+      d = 0
+      near = @nearby(ray.origin)      
+      for obj in @included
+        if not (obj in near)
+          @scene.remove obj
+      for obj in near
+        if not (obj in @included)
+          @scene.add obj
+          @included.push obj
+        
+      intersections = ray.intersectObjects near
+      return intersections
+    return [] 
+
+  drawRay: (ray) =>
+    try
+      @scene.remove @line
+    catch e
+      dd=1  
+    
+    #material2 = new THREE.LineBasicMaterial({ color: 0xff0000 })
+    #geometry2 = new THREE.Geometry()
+    #geometry2.vertices.push(ray.origin)
+    #geometry2.vertices.push(ray.origin.addSelf(ray.direction))
+    #@line = new THREE.Line(geometry2, material2)
+    #@scene.add @line
+   
+    @forward.position.x = ray.origin.x
+    @forward.position.y = ray.origin.y + 2.0
+    @forward.position.z = ray.origin.z - 10.0
+  
+    return null
+
+
   animate: =>
     requestAnimationFrame @animate
+    controls.isOnObject false
+    controls.forwardBlocked false
+    @ray.origin.copy controls.getObject().position
+    @ray.origin.y -= 0.15
+    intersections = @findIntersects(@ray)
 
-    controls.isOnObject true
-    #@ray.origin.copy controls.getObject().position
-    #@ray.origin.y -= 0.01
-    #if @objects.length > 0      
-    #  d = 0
-    #  intersections = @ray.intersectObjects(@objects)
-    #if intersections?.length > 0
-    #   d = 1
-    ##  distance = intersections[0].distance
-    #  controls.isOnObject true  if distance > 0 and distance < 1
+    co = controls.getObject().position
+    pos = new THREE.Vector3(co.x, co.y+0.5, co.z)
+
+    if @stopMovement(pos, 'translateZ')
+      controls.forwardBlocked true
+      controls.isOnObject true
+
+    if intersections?.length > 0      
+      for int in intersections
+        distance = int.distance
+        if distance > 0 and distance < 1.0
+          controls.isOnObject true
+  
+    if @stopMovement(pos, 'translateY')
+      controls.isOnObject true
+    
     #@pointLight.position.set controls.getObject().position.x, controls.getObject().position.y, controls.getObject().position.z
 
     @render()
     @stats.update()
+    #@scene.remove @collide
 
   render: =>     
     controls.update Date.now() - time

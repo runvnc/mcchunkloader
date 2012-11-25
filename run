@@ -1,5 +1,6 @@
 #!/bin/bash
-cd public/scripts
+
+cd views/scripts
 coffee -c *.coffee
 cd ../..
 coffee server

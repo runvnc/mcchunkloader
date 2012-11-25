@@ -1,0 +1,236 @@
+<html>
+<head><title>Minecraft Map Viewer and Dungeon Finder</title>
+<link href='http://fonts.googleapis.com/css?family=Ubuntu|Play' rel='stylesheet' type='text/css'>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script>
+<script type="x-shader/x-vertex" id="vertexshader">
+
+			uniform float amplitude;
+			attribute float size;
+			attribute vec3 customColor;
+
+			varying vec3 vColor;
+
+			void main() {
+
+				vColor = customColor;
+
+				vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+
+				//gl_PointSize = size;
+				//gl_PointSize = size * ( 300.0 / length( mvPosition.xyz ) );
+        gl_PointSize = 1.2;
+				gl_Position = projectionMatrix * mvPosition;
+
+			}
+
+		</script>
+
+		<script type="x-shader/x-fragment" id="fragmentshader">
+
+			uniform vec3 color;
+			uniform sampler2D texture;
+
+			varying vec3 vColor;
+
+			void main() {
+
+				gl_FragColor = vec4( color * vColor, 1.0 );
+				//gl_FragColor = gl_FragColor * texture2D( texture, gl_PointCoord );
+
+			}
+
+		</script>
+<style>
+body, p, div {
+  background-color: #000000;
+  font-family: 'Ubuntu', sans-serif;
+  color: #fff;
+  font-size: 14pt;
+  text-shadow:2px 2px 2px #0F1517;
+}
+
+body {
+  margin-left: auto;
+  margin-right: auto;
+  position: relative;
+  width: 95%;
+}
+
+.nav {
+  list-style-type: none;
+}
+
+.menuitem {
+  list-style-type: none;
+  display: inline;
+  margin-left: 1%;
+  margin-right: 1%;
+  background-color: #fff;
+  color: #000;
+  text-shadow: none;
+}
+
+a, a:visited, a:link {
+  color: #000;
+  text-decoration: none;
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+a:hover {
+  color: #fff;
+  background-color: #000;
+}
+
+a.clickhere {
+  color: #fff;
+  text-decoration: underline;
+}
+
+h1 {
+  font-family: 'Play', sans-serif;
+  margin-top: 0px;
+  padding-top: 0px;
+}
+
+.container, p.container, p {
+  background-color: #212E33;
+  border-radius: 15px;
+}
+.container {
+  position: relative;
+  padding: 25px;
+  width: 95%;
+}
+
+#inst {
+  position: absolute;
+  top: 285px;
+  right: 50px;
+  color: #fff;
+  background-color: rgba(0,0,0,0);
+}
+
+#mcafile {
+  border: 3px solid red;
+  position: relative;
+  top: 285px;
+  margin: 10px;
+  padding: 20px;
+}
+
+.highlight {
+  border: 2px solid red;
+  padding: 5px;
+}
+
+#stats {
+  position: absolute;
+  top: 290px;
+}
+
+#proginner {
+  position: absolute;
+  left: 40%;
+  top: 295px;
+  width: 0px;
+  height: 15px;
+  background-color: #fff;
+}
+#progouter {
+  position: absolute;
+  top: 295px;
+  left: 40%;
+  height:15px;
+  width: 300px;
+  border: 1px solid #fff;
+}
+#mcafile {
+  display: none;
+  text-align: left;
+  position: absolute;
+  left: 5px;
+}
+
+.vid {
+  position: relative;
+  left: 20%;
+  background-color: rgba(0,0,0,0);
+}
+
+</style>
+<script>
+function calcName() {
+  var regionx = Math.floor($('#x').val()*1 / 512);
+  var regionz = Math.floor($('#z').val()*1 / 512);
+  $('#fname').html('r.'+regionx.toString()+'.'+regionz.toString()+'.mca');
+}
+
+function open_in_new_tab(url ) {
+  window.open(url, '_blank');
+  window.focus();
+}
+
+$(document).ready(function() {
+  $('#x,#z,#showa,#showd').change(function() {
+    calcName();
+  });
+
+  $('#view').click(function() {
+    open_in_new_tab(encodeURI('viewer?url=&x='+$('#x').val()+"&y="+$('#y').val()+"&z="+$('#z').val() + "&size=3&showstuff="+$('input[name=show]:checked').val() + "&ymin=0"));
+  });
+
+  calcName();
+})
+
+</script>
+</head>
+<body>
+<div class="container">
+<h1>Minecraft Map Viewer and Dungeon Finder</h1>
+
+<script type="text/javascript"><!--
+
+google_ad_client = "ca-pub-1605512859966157";
+
+/* tmc1 */
+
+google_ad_slot = "7749536034";
+
+google_ad_width = 728;
+
+google_ad_height = 90;
+
+//-->
+
+</script>
+
+<script type="text/javascript" src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+</script>
+
+<ul class="nav">
+ <li class="menuitem"><a href="/">Home</a></li>
+ <li class="menuitem"><a target="_blank" href="/viewer?url=r.0.0.mca&x=172&y=67&z=189&size=3&showstuff=diamondsmoss&ymin=0">Demo</a></li>
+ <li class="menuitem"><a href="/viewer?url=&x=0&y=70&z=0&size=3&showstuff=diamondsmoss&ymin=0">Viewer</a></li>
+ <li class="menuitem"><a href="/minecraft-servers">Minecraft Servers</a></li>
+ <li class="menuitem"><a href="/vps-hosting">VPS Hosting for Minecraft</a></li>
+ <li class="menuitem"><a href="http://github.com/ithkuil/mcchunkloader">github</a></li>
+</ul>
+
+<%- partial(page) %>
+
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-25678702-1']);
+  _gaq.push(['_trackPageview']);
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+</script>
+
+</body>
+</html>
